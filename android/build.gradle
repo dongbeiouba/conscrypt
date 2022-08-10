@@ -54,7 +54,7 @@ if (androidSdkInstalled) {
                 cmake {
                     arguments '-DANDROID=True',
                             '-DANDROID_STL=c++_static',
-                            "-DBORINGSSL_HOME=$boringsslHome"
+                            "-DTONGSUO_HOME=$tongsuoHome"
                     cFlags '-fvisibility=hidden',
                             '-DBORINGSSL_SHARED_LIBRARY',
                             '-DBORINGSSL_IMPLEMENTATION',

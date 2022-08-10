@@ -2444,7 +2444,8 @@ static jboolean NativeCrypto_X25519(JNIEnv* env, jclass, jbyteArray outArray,
 
     ScopedByteArrayRW out(env, outArray);
     if (out.get() == nullptr) {
-        JNI_TRACE("X25519(%p, %p, %p) can't get output buffer", outArray, privkeyArray, pubkeyArray);
+        JNI_TRACE("X25519(%p, %p, %p) can't get output buffer",
+                  outArray, privkeyArray, pubkeyArray);
         return JNI_FALSE;
     }
 
@@ -2473,28 +2474,34 @@ static jboolean NativeCrypto_X25519(JNIEnv* env, jclass, jbyteArray outArray,
     return JNI_TRUE;
 }
 
-static void NativeCrypto_X25519_keypair(JNIEnv* env, jclass, jbyteArray outPublicArray, jbyteArray outPrivateArray) {
+static void NativeCrypto_X25519_keypair(JNIEnv* env, jclass, jbyteArray outPublicArray,
+                                        jbyteArray outPrivateArray) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     JNI_TRACE("X25519_keypair(%p, %p)", outPublicArray, outPrivateArray);
 
     ScopedByteArrayRW outPublic(env, outPublicArray);
     if (outPublic.get() == nullptr) {
-        JNI_TRACE("X25519_keypair(%p, %p) can't get output public key buffer", outPublicArray, outPrivateArray);
+        JNI_TRACE("X25519_keypair(%p, %p) can't get output public key buffer",
+                  outPublicArray, outPrivateArray);
         return;
     }
 
     ScopedByteArrayRW outPrivate(env, outPrivateArray);
     if (outPrivate.get() == nullptr) {
-        JNI_TRACE("X25519_keypair(%p, %p) can't get output private key buffer", outPublicArray, outPrivateArray);
+        JNI_TRACE("X25519_keypair(%p, %p) can't get output private key buffer",
+                  outPublicArray, outPrivateArray);
         return;
     }
 
-    if (outPublic.size() != X25519_PUBLIC_VALUE_LEN || outPrivate.size() != X25519_PRIVATE_KEY_LEN) {
-        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException", "Output key array length != 32");
+    if (outPublic.size() != X25519_PUBLIC_VALUE_LEN ||
+        outPrivate.size() != X25519_PRIVATE_KEY_LEN) {
+        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
+                                           "Output key array length != 32");
         return;
     }
 
-    X25519_keypair(reinterpret_cast<uint8_t*>(outPublic.get()), reinterpret_cast<uint8_t*>(outPrivate.get()));
+    X25519_keypair(reinterpret_cast<uint8_t*>(outPublic.get()),
+                   reinterpret_cast<uint8_t*>(outPrivate.get()));
     JNI_TRACE("X25519_keypair(%p, %p) => success", outPublicArray, outPrivateArray);
 }
 
@@ -3578,7 +3585,8 @@ typedef int (*evp_aead_ctx_op_func)(const EVP_AEAD_CTX* ctx, uint8_t* out, size_
 static jint evp_aead_ctx_op_common(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArray, jint tagLen,
                                uint8_t* outBuf, jbyteArray nonceArray,
                                const uint8_t* inBuf, jbyteArray aadArray,
-                               evp_aead_ctx_op_func realFunc, jobject inBuffer, jobject outBuffer, jint outRange, jint inRange)  {
+                               evp_aead_ctx_op_func realFunc, jobject inBuffer, jobject outBuffer,
+                               jint outRange, jint inRange)  {
     const EVP_AEAD* evpAead = reinterpret_cast<const EVP_AEAD*>(evpAeadRef);
 
     ScopedByteArrayRO keyBytes(env, keyArray);
@@ -3672,22 +3680,23 @@ static jint evp_aead_ctx_op(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArray, 
     uint8_t* outTmp = reinterpret_cast<uint8_t*>(outBytes.get());
     const uint8_t* inTmp = reinterpret_cast<const uint8_t*>(inBytes.get());
 
-    return evp_aead_ctx_op_common(env, evpAeadRef, keyArray, tagLen, outTmp + outOffset, nonceArray, inTmp + inOffset,
-                            aadArray, realFunc, inArray, outArray, outBytes.size() - outOffset, inLength);
+    return evp_aead_ctx_op_common(env, evpAeadRef, keyArray, tagLen, outTmp + outOffset, nonceArray,
+                                  inTmp + inOffset, aadArray, realFunc, inArray, outArray,
+                                  outBytes.size() - outOffset, inLength);
 }
 
 static jint evp_aead_ctx_op_buf(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArray, jint tagLen,
                             jobject outBuffer, jbyteArray nonceArray,
                             jobject inBuffer, jbyteArray aadArray,
                             evp_aead_ctx_op_func realFunc) {
-
     const EVP_AEAD* evpAead = reinterpret_cast<const EVP_AEAD*>(evpAeadRef);
     JNI_TRACE("evp_aead_ctx_op(%p, %p, %d, %p, %p, %p, %p)", evpAead, keyArray, tagLen,
               outBuffer, nonceArray, inBuffer, aadArray);
 
     if (env->IsInstanceOf(inBuffer, conscrypt::jniutil::byteBufferClass) != JNI_TRUE ||
-                        env->IsInstanceOf(outBuffer, conscrypt::jniutil::byteBufferClass) != JNI_TRUE  ) {
-        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException", "ByteBuffer Class Error");
+        env->IsInstanceOf(outBuffer, conscrypt::jniutil::byteBufferClass) != JNI_TRUE) {
+        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
+                                           "ByteBuffer Class Error");
         return 0;
     }
 
@@ -3696,28 +3705,30 @@ static jint evp_aead_ctx_op_buf(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArr
     jint in_position;
     jint inCapacity = env->GetDirectBufferCapacity(inBuffer);
     if (inCapacity == -1) {
-        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException", "Non Direct ByteBuffer  Error");
+        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
+                                           "Non Direct ByteBuffer  Error");
         return 0;
     }
-    inBuf = (uint8_t*)(env->GetDirectBufferAddress(inBuffer));
+    inBuf = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(inBuffer));
      // limit is the index of the first element that should not be read or written
-    in_limit = env->CallIntMethod(inBuffer,conscrypt::jniutil::buffer_limitMethod);
+    in_limit = env->CallIntMethod(inBuffer, conscrypt::jniutil::buffer_limitMethod);
     // position is the index of the next element to be read or written
-    in_position = env->CallIntMethod(inBuffer,conscrypt::jniutil::buffer_positionMethod);
+    in_position = env->CallIntMethod(inBuffer, conscrypt::jniutil::buffer_positionMethod);
 
     uint8_t* outBuf;
     jint out_limit;
     jint out_position;
     jint outCapacity = env->GetDirectBufferCapacity(outBuffer);
     if (outCapacity == -1) {
-        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException", "Non Direct ByteBuffer  Error");
+        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
+                                           "Non Direct ByteBuffer  Error");
         return 0;
     }
-    outBuf = (uint8_t*)(env->GetDirectBufferAddress(outBuffer));
+    outBuf = reinterpret_cast<uint8_t*>(env->GetDirectBufferAddress(outBuffer));
     // limit is the index of the first element that should not be read or written
-    out_limit = env->CallIntMethod(outBuffer,conscrypt::jniutil::buffer_limitMethod);
+    out_limit = env->CallIntMethod(outBuffer, conscrypt::jniutil::buffer_limitMethod);
     // position is the index of the next element to be read or written
-    out_position = env->CallIntMethod(outBuffer,conscrypt::jniutil::buffer_positionMethod);
+    out_position = env->CallIntMethod(outBuffer, conscrypt::jniutil::buffer_positionMethod);
 
     // Shifting over of ByteBuffer address to start at true position
     inBuf += in_position;
@@ -3727,7 +3738,7 @@ static jint evp_aead_ctx_op_buf(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArr
     uint8_t* outBufEnd = outBuf + out_limit - out_position;
     uint8_t* inBufEnd = inBuf + inSize;
     std::unique_ptr<uint8_t[]> inCopy;
-    if (outBufEnd >= inBuf && inBufEnd >= outBuf) { // We have an overlap
+    if (outBufEnd >= inBuf && inBufEnd >= outBuf) {  // We have an overlap
       inCopy.reset((new(std::nothrow) uint8_t[inSize]));
       if (inCopy.get() == nullptr) {
             conscrypt::jniutil::throwOutOfMemory(env, "Unable to allocate new buffer for overlap");
@@ -3737,8 +3748,9 @@ static jint evp_aead_ctx_op_buf(JNIEnv* env, jlong evpAeadRef, jbyteArray keyArr
         inBuf = inCopy.get();
     }
 
-    return evp_aead_ctx_op_common(env, evpAeadRef, keyArray, tagLen, outBuf, nonceArray, inBuf, aadArray, realFunc,
-                               inBuffer, outBuffer, out_limit-out_position, in_limit-in_position);
+    return evp_aead_ctx_op_common(env, evpAeadRef, keyArray, tagLen, outBuf, nonceArray, inBuf,
+                                  aadArray, realFunc, inBuffer, outBuffer, out_limit-out_position,
+                                  in_limit-in_position);
 }
 
 static jint NativeCrypto_EVP_AEAD_CTX_seal(JNIEnv* env, jclass, jlong evpAeadRef,
@@ -3762,16 +3774,18 @@ static jint NativeCrypto_EVP_AEAD_CTX_open(JNIEnv* env, jclass, jlong evpAeadRef
 }
 
 static jint NativeCrypto_EVP_AEAD_CTX_seal_buf(JNIEnv* env, jclass, jlong evpAeadRef,
-                                           jbyteArray keyArray, jint tagLen, jobject outBuffer,
-                                           jbyteArray nonceArray, jobject inBuffer, jbyteArray aadArray) {
+                                               jbyteArray keyArray, jint tagLen, jobject outBuffer,
+                                               jbyteArray nonceArray, jobject inBuffer,
+                                               jbyteArray aadArray) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     return evp_aead_ctx_op_buf(env, evpAeadRef, keyArray, tagLen, outBuffer, nonceArray,
                            inBuffer, aadArray, EVP_AEAD_CTX_seal);
 }
 
 static jint NativeCrypto_EVP_AEAD_CTX_open_buf(JNIEnv* env, jclass, jlong evpAeadRef,
-                                           jbyteArray keyArray, jint tagLen, jobject outBuffer,
-                                           jbyteArray nonceArray, jobject inBuffer, jbyteArray aadArray) {
+                                               jbyteArray keyArray, jint tagLen, jobject outBuffer,
+                                               jbyteArray nonceArray, jobject inBuffer,
+                                               jbyteArray aadArray) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     return evp_aead_ctx_op_buf(env, evpAeadRef, keyArray, tagLen, outBuffer, nonceArray,
                            inBuffer, aadArray, EVP_AEAD_CTX_open);
@@ -3815,7 +3829,7 @@ static void NativeCrypto_CMAC_Init(JNIEnv* env, jclass, jobject cmacCtxRef, jbyt
     const uint8_t* keyPtr = reinterpret_cast<const uint8_t*>(keyBytes.get());
 
     const EVP_CIPHER *cipher;
-    switch(keyBytes.size()) {
+    switch (keyBytes.size()) {
       case 16:
           cipher = EVP_aes_128_cbc();
           break;
@@ -4271,7 +4285,8 @@ static jobjectArray NativeCrypto_get_X509_GENERAL_NAME_stack(JNIEnv* env, jclass
     // TODO(https://github.com/google/conscrypt/issues/916): Handle errors, remove
     // |ERR_clear_error|, and throw CertificateParsingException.
     if (gn_stack == nullptr) {
-        JNI_TRACE("get_X509_GENERAL_NAME_stack(%p, %d) => null (no extension or error)", x509, type);
+        JNI_TRACE("get_X509_GENERAL_NAME_stack(%p, %d) => null (no extension or error)",
+                  x509, type);
         ERR_clear_error();
         return nullptr;
     }
@@ -6273,6 +6288,7 @@ static jint NativeCrypto_get_X509_ex_pathlen(JNIEnv* env, jclass, jlong x509Ref,
         return -1;
     }
 
+    // NOLINTNEXTLINE(runtime/int)
     long pathlen = ASN1_INTEGER_get(basic_constraints->pathlen);
     if (pathlen == -1 || pathlen > INT_MAX) {
         // TODO(https://github.com/google/conscrypt/issues/916): Treat this as an error condition.
@@ -7058,7 +7074,7 @@ static void debug_print_packet_data(const SSL* ssl, char direction, const char* 
 
     // Packet preamble for text2pcap
     CONSCRYPT_LOG(LOG_INFO, LOG_TAG "-jni", "ssl=%p SSL_DATA: %c %ld.%06ld", ssl, direction,
-                  static_cast<long>(tv.tv_sec),
+                  static_cast<long>(tv.tv_sec),    // NOLINT(runtime/int)
                   static_cast<long>(tv.tv_usec));  // NOLINT(runtime/int)
 
     char out[kDataWidth * 3 + 1];
@@ -10293,7 +10309,8 @@ static jboolean NativeCrypto_usesBoringSsl_FIPS_mode() {
  * Scrypt support
  */
 
-static jbyteArray NativeCrypto_Scrypt_generate_key(JNIEnv* env, jclass, jbyteArray password, jbyteArray salt,
+static jbyteArray NativeCrypto_Scrypt_generate_key(JNIEnv* env, jclass, jbyteArray password,
+                                                   jbyteArray salt,
                                                    jint n, jint r, jint p, jint key_len) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     JNI_TRACE("Scrypt_generate_key(%p, %p, %d, %d, %d, %d)", password, salt, n, r, p, key_len);
@@ -10321,8 +10338,10 @@ static jbyteArray NativeCrypto_Scrypt_generate_key(JNIEnv* env, jclass, jbyteArr
     ScopedByteArrayRO password_bytes(env, password);
     ScopedByteArrayRO salt_bytes(env, salt);
 
-    int result = EVP_PBE_scrypt(reinterpret_cast<const char*>(password_bytes.get()), password_bytes.size(),
-                                reinterpret_cast<const uint8_t*>(salt_bytes.get()), salt_bytes.size(),
+    int result = EVP_PBE_scrypt(reinterpret_cast<const char*>(password_bytes.get()),
+                                password_bytes.size(),
+                                reinterpret_cast<const uint8_t*>(salt_bytes.get()),
+                                salt_bytes.size(),
                                 n, r, p, memory_limit,
                                 reinterpret_cast<uint8_t*>(out_key.get()), key_len);
 
@@ -10609,8 +10628,10 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_nonce_length, "(J)I"),
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_seal, "(J[BI[BI[B[BII[B)I"),
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_open, "(J[BI[BI[B[BII[B)I"),
-        CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_seal_buf, "(J[BILjava/nio/ByteBuffer;[BLjava/nio/ByteBuffer;[B)I"),
-        CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_open_buf, "(J[BILjava/nio/ByteBuffer;[BLjava/nio/ByteBuffer;[B)I"),
+        CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_seal_buf,
+                                "(J[BILjava/nio/ByteBuffer;[BLjava/nio/ByteBuffer;[B)I"),
+        CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_open_buf,
+                                "(J[BILjava/nio/ByteBuffer;[BLjava/nio/ByteBuffer;[B)I"),
         CONSCRYPT_NATIVE_METHOD(HMAC_CTX_new, "()J"),
         CONSCRYPT_NATIVE_METHOD(HMAC_CTX_free, "(J)V"),
         CONSCRYPT_NATIVE_METHOD(HMAC_Init_ex, "(" REF_HMAC_CTX "[BJ)V"),
@@ -10666,7 +10687,8 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(X509_get_serialNumber, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(X509_verify, "(J" REF_X509 REF_EVP_PKEY ")V"),
         CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert, "(J" REF_X509 ")[B"),
-        CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert_without_ext, "(J" REF_X509 "Ljava/lang/String;)[B"),
+        CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert_without_ext,
+                                "(J" REF_X509 "Ljava/lang/String;)[B"),
         CONSCRYPT_NATIVE_METHOD(get_X509_signature, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(get_X509_CRL_signature, "(J" REF_X509_CRL ")[B"),
         CONSCRYPT_NATIVE_METHOD(get_X509_ex_flags, "(J" REF_X509 ")I"),

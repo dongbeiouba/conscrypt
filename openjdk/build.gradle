@@ -166,8 +166,7 @@ publishing.publications.maven {
 }
 
 jar.manifest {
-    attributes ('BoringSSL-Version' : boringSslVersion,
-                'Automatic-Module-Name' : 'org.conscrypt',
+    attributes ('Automatic-Module-Name' : 'org.conscrypt',
                 'Bundle-SymbolicName': 'org.conscrypt',
                 '-exportcontents': 'org.conscrypt.*')
 }
@@ -310,9 +309,9 @@ model {
                     def building64Bit = false
                     def libPath
                     if (targetPlatform.getArchitecture().getName() == "x86") {
-                        libPath = "$boringssl32BuildDir"
+                        libPath = "$tongsuoLibDir"
                     } else if (targetPlatform.getArchitecture().getName() == "x86-64") {
-                        libPath = "$boringssl64BuildDir"
+                        libPath = "$tongsuoLibDir"
                         building64Bit = true
                     } else {
                         throw new GradleException("Unknown architecture: " +
@@ -326,7 +325,7 @@ model {
                                 "-std=c++17",
                                 "-I$jniSourceDir/main/include",
                                 "-I$jniSourceDir/unbundled/include",
-                                "-I$boringsslIncludeDir",
+                                "-I$tongsuoIncludeDir",
                                 "-I$jdkIncludeDir",
                                 "-I$jdkIncludeDir/linux",
                                 "-I$jdkIncludeDir/darwin",
@@ -386,7 +385,7 @@ model {
                                 "-wd5027", // Move assignment operator was implicitly defined as deleted
                                 "-I$jniSourceDir/main/include",
                                 "-I$jniSourceDir/unbundled/include",
-                                "-I$boringsslIncludeDir",
+                                "-I$tongsuoIncludeDir",
                                 "-I$jdkIncludeDir",
                                 "-I$jdkIncludeDir/win32"
 

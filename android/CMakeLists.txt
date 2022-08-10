@@ -9,10 +9,14 @@ add_library(conscrypt_jni
             )
 include_directories(../common/src/jni/main/include/
                     ../common/src/jni/unbundled/include/
-                    ${BORINGSSL_HOME}/include)
+                    ${TONGSUO_HOME}/include)
 
 find_library(android-log-lib log)
-target_link_libraries(conscrypt_jni ${android-log-lib} ssl crypto)
+find_library(tongsuo-lib
+             NAMES ssl crypto
+             HINTS ${TONGSUO_HOME}/lib
+             REQUIRED)
+target_link_libraries(conscrypt_jni ${android-log-lib} ${tongsuo-lib})
 
 add_definitions(-DANDROID
                 -fvisibility=hidden
@@ -35,5 +39,3 @@ add_definitions(-DANDROID
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=armv8-a+crypto")
 endif()
-
-add_subdirectory(${BORINGSSL_HOME} ${CMAKE_CURRENT_BINARY_DIR}/boringssl)

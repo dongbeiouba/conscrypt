@@ -108,23 +108,28 @@ void init(JavaVM* vm, JNIEnv* env) {
     buffer_positionMethod = getMethodRef(env, bufferClass, "position", "()I");
     buffer_limitMethod = getMethodRef(env, bufferClass, "limit", "()I");
     sslHandshakeCallbacks_verifyCertificateChain =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "verifyCertificateChain", "([[BLjava/lang/String;)V");
+            getMethodRef(env, sslHandshakeCallbacksClass, "verifyCertificateChain",
+                         "([[BLjava/lang/String;)V");
     sslHandshakeCallbacks_onSSLStateChange =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "onSSLStateChange", "(II)V");
+            getMethodRef(env, sslHandshakeCallbacksClass, "onSSLStateChange", "(II)V");
     sslHandshakeCallbacks_clientCertificateRequested =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "clientCertificateRequested", "([B[I[[B)V");
+            getMethodRef(env, sslHandshakeCallbacksClass, "clientCertificateRequested",
+                         "([B[I[[B)V");
     sslHandshakeCallbacks_serverCertificateRequested =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "serverCertificateRequested", "()V");
+            getMethodRef(env, sslHandshakeCallbacksClass, "serverCertificateRequested",
+                         "()V");
     sslHandshakeCallbacks_clientPSKKeyRequested =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "clientPSKKeyRequested", "(Ljava/lang/String;[B[B)I");
+            getMethodRef(env, sslHandshakeCallbacksClass, "clientPSKKeyRequested",
+                         "(Ljava/lang/String;[B[B)I");
     sslHandshakeCallbacks_serverPSKKeyRequested =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "serverPSKKeyRequested", "(Ljava/lang/String;Ljava/lang/String;[B)I");
+            getMethodRef(env, sslHandshakeCallbacksClass, "serverPSKKeyRequested",
+                         "(Ljava/lang/String;Ljava/lang/String;[B)I");
     sslHandshakeCallbacks_onNewSessionEstablished =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "onNewSessionEstablished", "(J)V");
+            getMethodRef(env, sslHandshakeCallbacksClass, "onNewSessionEstablished", "(J)V");
     sslHandshakeCallbacks_serverSessionRequested =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "serverSessionRequested", "([B)J");
+            getMethodRef(env, sslHandshakeCallbacksClass, "serverSessionRequested", "([B)J");
     sslHandshakeCallbacks_selectApplicationProtocol =
-	    getMethodRef(env, sslHandshakeCallbacksClass, "selectApplicationProtocol", "([B)I");
+            getMethodRef(env, sslHandshakeCallbacksClass, "selectApplicationProtocol", "([B)I");
     cryptoUpcallsClass_rawSignMethod = env->GetStaticMethodID(cryptoUpcallsClass,
                                                      "ecSignDigestWithPrivateKey",
                                                      "(Ljava/security/PrivateKey;[B)[B");
@@ -138,8 +143,8 @@ void init(JavaVM* vm, JNIEnv* env) {
         env->FatalError("Could not find rsaSignDigestWithPrivateKey");
     }
     cryptoUpcallsClass_rsaDecryptMethod = env->GetStaticMethodID(cryptoUpcallsClass,
-						     "rsaDecryptWithPrivateKey",
-						     "(Ljava/security/PrivateKey;I[B)[B");
+                                              "rsaDecryptWithPrivateKey",
+                                              "(Ljava/security/PrivateKey;I[B)[B");
     if (cryptoUpcallsClass_rsaDecryptMethod == nullptr) {
         env->FatalError("Could not find rsaDecryptWithPrivateKey");
     }
