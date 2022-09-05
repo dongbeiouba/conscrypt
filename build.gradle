@@ -88,6 +88,7 @@ subprojects {
 
         tongsuoIncludeDir = normalizePath("$tongsuoHome/include")
         tongsuoLibDir = normalizePath("$tongsuoHome/lib")
+        tongsuoLib64Dir = normalizePath("$tongsuoHome/lib64")
 
         if (project.hasProperty("jdkHome")) {
             jdkHome = project.property("jdkHome")
@@ -102,7 +103,7 @@ subprojects {
         assert build32Bit || build64Bit
         assert file("$tongsuoHome").exists()
         assert file("$tongsuoIncludeDir").exists()
-        assert file("$tongsuoLibDir").exists()
+        assert file("$tongsuoLibDir").exists() || file("$tongsuoLib64Dir").exists()
         assert file("$jdkHome").exists()
         assert file("$jdkIncludeDir").exists()
 
