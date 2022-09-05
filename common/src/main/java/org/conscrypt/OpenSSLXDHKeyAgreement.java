@@ -48,12 +48,13 @@ public final class OpenSSLXDHKeyAgreement extends OpenSSLBaseDHKeyAgreement<byte
 
     @Override
     protected int computeKey(byte[] buffer, byte[] theirPublicKey, byte[] ourPrivateKey) throws InvalidKeyException {
-        if (!NativeCrypto.X25519(
-                buffer,
-                ourPrivateKey,
-                theirPublicKey)) {
-            throw new InvalidKeyException("Error running X25519");
-        }
+        // TODO
+//         if (!NativeCrypto.X25519(
+//                 buffer,
+//                 ourPrivateKey,
+//                 theirPublicKey)) {
+//             throw new InvalidKeyException("Error running X25519");
+//         }
 
         return OpenSSLX25519Key.X25519_KEY_SIZE_BYTES;
     }

@@ -23,7 +23,6 @@
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
 #include <openssl/evp.h>
-#include <openssl/aead.h>
 
 static const char kCopyright[] =
     "/* Copyright (C) 2015 The Android Open Source Project\n"
@@ -55,6 +54,7 @@ int main(int /* argc */, char ** /* argv */) {
 
   CONST(EVP_PKEY_RSA);
   CONST(EVP_PKEY_EC);
+  CONST(EVP_PKEY_SM2);
 
   CONST(RSA_PKCS1_PADDING);
   CONST(RSA_NO_PADDING);
@@ -62,6 +62,10 @@ int main(int /* argc */, char ** /* argv */) {
   CONST(RSA_PKCS1_PSS_PADDING);
 
   CONST(SSL_MODE_SEND_FALLBACK_SCSV);
+// The following flags do nothing and are defined only to make it easier to
+// compile code with Tongsuo.
+#define SSL_MODE_CBC_RECORD_SPLITTING 0
+#define SSL_MODE_ENABLE_FALSE_START 0
   CONST(SSL_MODE_CBC_RECORD_SPLITTING);
   CONST(SSL_MODE_ENABLE_FALSE_START);
 
@@ -86,6 +90,19 @@ int main(int /* argc */, char ** /* argv */) {
   CONST(TLS_CT_RSA_SIGN);
   CONST(TLS_CT_ECDSA_SIGN);
 
+// SSL_SIGN_* are signature algorithm values as defined in TLS 1.3.
+#define SSL_SIGN_RSA_PKCS1_SHA1 0x0201
+#define SSL_SIGN_RSA_PKCS1_SHA256 0x0401
+#define SSL_SIGN_RSA_PKCS1_SHA384 0x0501
+#define SSL_SIGN_RSA_PKCS1_SHA512 0x0601
+#define SSL_SIGN_ECDSA_SHA1 0x0203
+#define SSL_SIGN_ECDSA_SECP256R1_SHA256 0x0403
+#define SSL_SIGN_ECDSA_SECP384R1_SHA384 0x0503
+#define SSL_SIGN_ECDSA_SECP521R1_SHA512 0x0603
+#define SSL_SIGN_RSA_PSS_RSAE_SHA256 0x0804
+#define SSL_SIGN_RSA_PSS_RSAE_SHA384 0x0805
+#define SSL_SIGN_RSA_PSS_RSAE_SHA512 0x0806
+#define SSL_SIGN_ED25519 0x0807
   CONST(SSL_SIGN_RSA_PKCS1_SHA1);
   CONST(SSL_SIGN_RSA_PKCS1_SHA256);
   CONST(SSL_SIGN_RSA_PKCS1_SHA384);

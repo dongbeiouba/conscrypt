@@ -145,8 +145,8 @@ public final class NativeCrypto {
     /**
      * Returns the encrypted or decrypted version of the data.
      */
-    static native void chacha20_encrypt_decrypt(byte[] in, int inOffset, byte[] out, int outOffset,
-            int length, byte[] key, byte[] nonce, int blockCounter);
+//     static native void chacha20_encrypt_decrypt(byte[] in, int inOffset, byte[] out, int outOffset,
+//             int length, byte[] key, byte[] nonce, int blockCounter);
 
     // --- EC functions --------------------------
 
@@ -205,9 +205,9 @@ public final class NativeCrypto {
 
     // --- Curve25519 --------------
 
-    static native boolean X25519(byte[] out, byte[] privateKey, byte[] publicKey) throws InvalidKeyException;
-
-    static native void X25519_keypair(byte[] outPublicKey, byte[] outPrivateKey);
+//     static native boolean X25519(byte[] out, byte[] privateKey, byte[] publicKey) throws InvalidKeyException;
+//
+//     static native void X25519_keypair(byte[] outPublicKey, byte[] outPrivateKey);
 
     // --- Message digest functions --------------
 
@@ -322,35 +322,35 @@ public final class NativeCrypto {
     static native void EVP_CIPHER_CTX_free(long ctx);
 
     // --- AEAD ----------------------------------------------------------------
-    static native long EVP_aead_aes_128_gcm();
-
-    static native long EVP_aead_aes_256_gcm();
-
-    static native long EVP_aead_chacha20_poly1305();
-
-    static native long EVP_aead_aes_128_gcm_siv();
-
-    static native long EVP_aead_aes_256_gcm_siv();
-
-    static native int EVP_AEAD_max_overhead(long evpAead);
-
-    static native int EVP_AEAD_nonce_length(long evpAead);
-
-    static native int EVP_AEAD_CTX_seal(long evpAead, byte[] key, int tagLengthInBytes, byte[] out,
-            int outOffset, byte[] nonce, byte[] in, int inOffset, int inLength, byte[] ad)
-            throws ShortBufferException, BadPaddingException;
-
-    static native int EVP_AEAD_CTX_seal_buf(long evpAead, byte[] key, int tagLengthInBytes, ByteBuffer out,
-                                            byte[] nonce, ByteBuffer input, byte[] ad)
-            throws ShortBufferException, BadPaddingException;
-
-    static native int EVP_AEAD_CTX_open(long evpAead, byte[] key, int tagLengthInBytes, byte[] out,
-            int outOffset, byte[] nonce, byte[] in, int inOffset, int inLength, byte[] ad)
-            throws ShortBufferException, BadPaddingException;
-
-    static native int EVP_AEAD_CTX_open_buf(long evpAead, byte[] key, int tagLengthInBytes, ByteBuffer out,
-                                            byte[] nonce, ByteBuffer input, byte[] ad)
-            throws ShortBufferException, BadPaddingException;
+//     static native long EVP_aead_aes_128_gcm();
+//
+//     static native long EVP_aead_aes_256_gcm();
+//
+//     static native long EVP_aead_chacha20_poly1305();
+//
+//     static native long EVP_aead_aes_128_gcm_siv();
+//
+//     static native long EVP_aead_aes_256_gcm_siv();
+//
+//     static native int EVP_AEAD_max_overhead(long evpAead);
+//
+//     static native int EVP_AEAD_nonce_length(long evpAead);
+//
+//     static native int EVP_AEAD_CTX_seal(long evpAead, byte[] key, int tagLengthInBytes, byte[] out,
+//             int outOffset, byte[] nonce, byte[] in, int inOffset, int inLength, byte[] ad)
+//             throws ShortBufferException, BadPaddingException;
+//
+//     static native int EVP_AEAD_CTX_seal_buf(long evpAead, byte[] key, int tagLengthInBytes, ByteBuffer out,
+//                                             byte[] nonce, ByteBuffer input, byte[] ad)
+//             throws ShortBufferException, BadPaddingException;
+//
+//     static native int EVP_AEAD_CTX_open(long evpAead, byte[] key, int tagLengthInBytes, byte[] out,
+//             int outOffset, byte[] nonce, byte[] in, int inOffset, int inLength, byte[] ad)
+//             throws ShortBufferException, BadPaddingException;
+//
+//     static native int EVP_AEAD_CTX_open_buf(long evpAead, byte[] key, int tagLengthInBytes, ByteBuffer out,
+//                                             byte[] nonce, ByteBuffer input, byte[] ad)
+//             throws ShortBufferException, BadPaddingException;
 
     // --- CMAC functions ------------------------------------------------------
 

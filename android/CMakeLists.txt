@@ -12,6 +12,7 @@ include_directories(../common/src/jni/main/include/
                     ${TONGSUO_HOME}/include)
 
 find_library(android-log-lib log)
+
 find_library(tongsuo-lib
              NAMES ssl crypto
              HINTS ${TONGSUO_HOME}/lib
@@ -20,8 +21,6 @@ target_link_libraries(conscrypt_jni ${android-log-lib} ${tongsuo-lib})
 
 add_definitions(-DANDROID
                 -fvisibility=hidden
-                -DBORINGSSL_SHARED_LIBRARY
-                -DBORINGSSL_IMPLEMENTATION
                 -DOPENSSL_SMALL
                 -D_XOPEN_SOURCE=700
                 -Wno-unused-parameter
