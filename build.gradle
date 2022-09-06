@@ -83,7 +83,7 @@ subprojects {
         if (project.hasProperty("tongsuoHome")) {
             tongsuoHome = project.property("tongsuoHome")
         } else {
-            tongsuoHome = "/opt/tongsuo"
+            tongsuoHome = "$System.env.TONGSUO_HOME"
         }
 
         tongsuoIncludeDir = normalizePath("$tongsuoHome/include")

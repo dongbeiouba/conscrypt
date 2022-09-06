@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
+
+link_directories(BEFORE ${TONGSUO_HOME}/lib64/ ${TONGSUO_HOME}/lib/)
+
 add_library(conscrypt_jni
             SHARED
             ../common/src/jni/main/cpp/conscrypt/compatibility_close_monitor.cc
@@ -9,15 +12,11 @@ add_library(conscrypt_jni
             )
 include_directories(../common/src/jni/main/include/
                     ../common/src/jni/unbundled/include/
-                    ${TONGSUO_HOME}/include)
+                    ${TONGSUO_HOME}/include/)
 
 find_library(android-log-lib log)
 
-find_library(tongsuo-lib
-             NAMES ssl crypto
-             HINTS ${TONGSUO_HOME}/lib
-             REQUIRED)
-target_link_libraries(conscrypt_jni ${android-log-lib} ${tongsuo-lib})
+target_link_libraries(conscrypt_jni ${android-log-lib} ssl crypto)
 
 add_definitions(-DANDROID
                 -fvisibility=hidden
