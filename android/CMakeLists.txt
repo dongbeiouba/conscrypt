@@ -32,7 +32,8 @@ add_definitions(-DANDROID
                 # TODO: Remove these when the NDK no longer includes a version that has
                 # -Wtautological-constant-compare enabled as part of -Wall
                 -Wno-tautological-constant-compare
-                -Wtautological-constant-out-of-range-compare)
+                -Wtautological-constant-out-of-range-compare
+                -Wno-deprecated-declarations)
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=armv8-a+crypto")
