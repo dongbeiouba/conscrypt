@@ -333,7 +333,7 @@ jbyteArray ASN1ToByteArray(JNIEnv* env, T* obj, int (*i2d_func)(U*, unsigned cha
     return byteArray.release();
 }
 
-static jbyteArray MemToByteArray(JNIEnv* env, unsigned char *buf, size_t len)
+static jbyteArray Buf2ByteArray(JNIEnv* env, unsigned char *buf, size_t len)
 {
     ScopedLocalRef<jbyteArray> byteArray(env, env->NewByteArray(static_cast<jsize>(len)));
     if (byteArray.get() == nullptr) {
@@ -1185,14 +1185,24 @@ static jbyteArray NativeCrypto_EVP_marshal_private_key(JNIEnv* env, jclass, jobj
         return nullptr;
     }
 
-    len = i2d_PrivateKey(pkey, &buf);
-    if (len < 0) {
+    PKCS8_PRIV_KEY_INFO *p8 = EVP_PKEY2PKCS8(pkey);
+    if (p8 == nullptr) {
         conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "EVP_marshal_private_key");
-        JNI_TRACE("key=%p i2d_PrivateKey => error", pkey);
+        JNI_TRACE("key=%p EVP_PKEY2PKCS8 => error", pkey);
         return nullptr;
     }
 
-    return MemToByteArray(env, buf, len);
+
+    len = i2d_PKCS8_PRIV_KEY_INFO(p8, &buf);
+    PKCS8_PRIV_KEY_INFO_free(p8);
+
+    if (len < 0) {
+        conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "EVP_marshal_private_key");
+        JNI_TRACE("key=%p i2d_PKCS8_PRIV_KEY_INFO => error", pkey);
+        return nullptr;
+    }
+
+    return Buf2ByteArray(env, buf, len);
 }
 
 /*
@@ -1558,7 +1568,7 @@ static jlong NativeCrypto_EVP_parse_private_key(JNIEnv* env, jclass, jbyteArray 
 static jobjectArray NativeCrypto_get_RSA_private_params(JNIEnv* env, jclass, jobject pkeyRef) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     EVP_PKEY* pkey = fromContextObject<EVP_PKEY>(env, pkeyRef);
-    JNI_TRACE("get_RSA_public_params(%p)", pkey);
+    JNI_TRACE("get_RSA_private_params(%p)", pkey);
 
     if (pkey == nullptr) {
         return nullptr;
@@ -1566,7 +1576,7 @@ static jobjectArray NativeCrypto_get_RSA_private_params(JNIEnv* env, jclass, job
 
     RSA *rsa = EVP_PKEY_get1_RSA(pkey);
     if (rsa == nullptr) {
-        conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "get_RSA_public_params failed");
+        conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "get_RSA_private_params failed");
         return nullptr;
     }
 
