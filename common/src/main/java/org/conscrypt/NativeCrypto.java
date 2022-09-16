@@ -946,13 +946,13 @@ public final class NativeCrypto {
 
     static native int SSL_set_protocol_versions(long ssl, NativeSsl ssl_holder, int min_version, int max_version);
 
-    static native void SSL_enable_signed_cert_timestamps(long ssl, NativeSsl ssl_holder);
+//     static native void SSL_enable_signed_cert_timestamps(long ssl, NativeSsl ssl_holder);
 
     static native byte[] SSL_get_signed_cert_timestamp_list(long ssl, NativeSsl ssl_holder);
 
     static native void SSL_set_signed_cert_timestamp_list(long ssl, NativeSsl ssl_holder, byte[] list);
 
-    static native void SSL_enable_ocsp_stapling(long ssl, NativeSsl ssl_holder);
+//     static native void SSL_enable_ocsp_stapling(long ssl, NativeSsl ssl_holder);
 
     static native byte[] SSL_get_ocsp_response(long ssl, NativeSsl ssl_holder);
 
@@ -1152,7 +1152,7 @@ public final class NativeCrypto {
 
     static native boolean SSL_session_reused(long ssl, NativeSsl ssl_holder);
 
-    static native void SSL_accept_renegotiations(long ssl, NativeSsl ssl_holder) throws SSLException;
+//     static native void SSL_accept_renegotiations(long ssl, NativeSsl ssl_holder) throws SSLException;
 
     static native void SSL_set_tlsext_host_name(long ssl, NativeSsl ssl_holder, String hostname)
             throws SSLException;
