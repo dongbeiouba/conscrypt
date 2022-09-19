@@ -295,9 +295,9 @@ final class NativeSsl {
 
             // Configure OCSP and CT extensions for client
             NativeCrypto.SSL_enable_ocsp_stapling(ssl, this);
-            // if (parameters.isCTVerificationEnabled(hostname)) {
-            //     NativeCrypto.SSL_enable_signed_cert_timestamps(ssl, this);
-            // }
+            if (parameters.isCTVerificationEnabled(hostname)) {
+                NativeCrypto.SSL_enable_signed_cert_timestamps(ssl, this);
+            }
         } else {
             NativeCrypto.SSL_set_accept_state(ssl, this);
 

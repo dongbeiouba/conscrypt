@@ -7626,45 +7626,48 @@ static jint NativeCrypto_SSL_set_protocol_versions(JNIEnv* env, jclass, jlong ss
 /**
  * public static native void SSL_enable_signed_cert_timestamps(long ssl);
  */
-// static void NativeCrypto_SSL_enable_signed_cert_timestamps(JNIEnv* env, jclass, jlong ssl_address,
-//                                                            CONSCRYPT_UNUSED jobject ssl_holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     SSL* ssl = to_SSL(env, ssl_address, true);
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_enable_signed_cert_timestamps", ssl);
-//     if (ssl == nullptr) {
-//         return;
-//     }
+static void NativeCrypto_SSL_enable_signed_cert_timestamps(JNIEnv* env, jclass, jlong ssl_address,
+                                                           CONSCRYPT_UNUSED jobject ssl_holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    SSL* ssl = to_SSL(env, ssl_address, true);
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_enable_signed_cert_timestamps", ssl);
+    if (ssl == nullptr) {
+        return;
+    }
 
-//     SSL_enable_signed_cert_timestamps(ssl);
-// }
+    SSL_enable_ct(ssl, SSL_CT_VALIDATION_STRICT);
+}
 
 /**
  * public static native byte[] SSL_get_signed_cert_timestamp_list(long ssl);
  */
-// static jbyteArray NativeCrypto_SSL_get_signed_cert_timestamp_list(
-//         JNIEnv* env, jclass, jlong ssl_address, CONSCRYPT_UNUSED jobject ssl_holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     SSL* ssl = to_SSL(env, ssl_address, true);
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_get_signed_cert_timestamp_list", ssl);
-//     if (ssl == nullptr) {
-//         return nullptr;
-//     }
+static jbyteArray NativeCrypto_SSL_get_signed_cert_timestamp_list(
+        JNIEnv* env, jclass, jlong ssl_address, CONSCRYPT_UNUSED jobject ssl_holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    SSL* ssl = to_SSL(env, ssl_address, true);
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_get_signed_cert_timestamp_list", ssl);
+    if (ssl == nullptr) {
+        return nullptr;
+    }
 
-//     const uint8_t* data;
-//     size_t data_len;
-//     SSL_get0_signed_cert_timestamp_list(ssl, &data, &data_len);
+    // TODO(tongsuo)
+    return nullptr;
 
-//     if (data_len == 0) {
-//         JNI_TRACE("NativeCrypto_SSL_get_signed_cert_timestamp_list(%p) => null", ssl);
-//         return nullptr;
-//     }
+    // const uint8_t* data;
+    // size_t data_len;
+    // SSL_get0_signed_cert_timestamp_list(ssl, &data, &data_len);
 
-//     jbyteArray result = env->NewByteArray(static_cast<jsize>(data_len));
-//     if (result != nullptr) {
-//         env->SetByteArrayRegion(result, 0, static_cast<jsize>(data_len), (const jbyte*)data);
-//     }
-//     return result;
-// }
+    // if (data_len == 0) {
+    //     JNI_TRACE("NativeCrypto_SSL_get_signed_cert_timestamp_list(%p) => null", ssl);
+    //     return nullptr;
+    // }
+
+    // jbyteArray result = env->NewByteArray(static_cast<jsize>(data_len));
+    // if (result != nullptr) {
+    //     env->SetByteArrayRegion(result, 0, static_cast<jsize>(data_len), (const jbyte*)data);
+    // }
+    // return result;
+}
 
 /*
  * public static native void SSL_set_signed_cert_timestamp_list(long ssl, byte[] response);
@@ -10906,8 +10909,8 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(SSL_set_options, "(J" REF_SSL "J)J"),
         CONSCRYPT_NATIVE_METHOD(SSL_clear_options, "(J" REF_SSL "J)J"),
         CONSCRYPT_NATIVE_METHOD(SSL_set_protocol_versions, "(J" REF_SSL "II)I"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_enable_signed_cert_timestamps, "(J" REF_SSL ")V"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_get_signed_cert_timestamp_list, "(J" REF_SSL ")[B"),
+        CONSCRYPT_NATIVE_METHOD(SSL_enable_signed_cert_timestamps, "(J" REF_SSL ")V"),
+        CONSCRYPT_NATIVE_METHOD(SSL_get_signed_cert_timestamp_list, "(J" REF_SSL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(SSL_set_signed_cert_timestamp_list, "(J" REF_SSL "[B)V"),
         CONSCRYPT_NATIVE_METHOD(SSL_enable_ocsp_stapling, "(J" REF_SSL ")V"),
         CONSCRYPT_NATIVE_METHOD(SSL_get_ocsp_response, "(J" REF_SSL ")[B"),

@@ -946,7 +946,7 @@ public final class NativeCrypto {
 
     static native int SSL_set_protocol_versions(long ssl, NativeSsl ssl_holder, int min_version, int max_version);
 
-//     static native void SSL_enable_signed_cert_timestamps(long ssl, NativeSsl ssl_holder);
+    static native void SSL_enable_signed_cert_timestamps(long ssl, NativeSsl ssl_holder);
 
     static native byte[] SSL_get_signed_cert_timestamp_list(long ssl, NativeSsl ssl_holder);
 

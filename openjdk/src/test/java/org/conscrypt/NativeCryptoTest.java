@@ -1706,7 +1706,7 @@ public class NativeCryptoTest {
             @Override
             public long beforeHandshake(long c) throws SSLException {
                 long s = super.beforeHandshake(c);
-                // NativeCrypto.SSL_enable_signed_cert_timestamps(s, null);
+                NativeCrypto.SSL_enable_signed_cert_timestamps(s, null);
                 return s;
             }
 
