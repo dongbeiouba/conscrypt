@@ -1664,7 +1664,7 @@ public class NativeCryptoTest {
             @Override
             public long beforeHandshake(long c) throws SSLException {
                 long s = super.beforeHandshake(c);
-                // NativeCrypto.SSL_enable_ocsp_stapling(s, null);
+                NativeCrypto.SSL_enable_ocsp_stapling(s, null);
                 return s;
             }
 

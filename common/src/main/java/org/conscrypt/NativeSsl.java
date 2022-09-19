@@ -294,7 +294,7 @@ final class NativeSsl {
             NativeCrypto.SSL_set_connect_state(ssl, this);
 
             // Configure OCSP and CT extensions for client
-            // NativeCrypto.SSL_enable_ocsp_stapling(ssl, this);
+            NativeCrypto.SSL_enable_ocsp_stapling(ssl, this);
             // if (parameters.isCTVerificationEnabled(hostname)) {
             //     NativeCrypto.SSL_enable_signed_cert_timestamps(ssl, this);
             // }
@@ -302,9 +302,9 @@ final class NativeSsl {
             NativeCrypto.SSL_set_accept_state(ssl, this);
 
             // Configure OCSP for server
-            // if (parameters.getOCSPResponse() != null) {
-            //     NativeCrypto.SSL_enable_ocsp_stapling(ssl, this);
-            // }
+            if (parameters.getOCSPResponse() != null) {
+                NativeCrypto.SSL_enable_ocsp_stapling(ssl, this);
+            }
         }
 
         if (parameters.getEnabledProtocols().length == 0 && parameters.isEnabledProtocolsFiltered) {
@@ -603,9 +603,9 @@ final class NativeSsl {
         }
     }
 
-    int getMaxSealOverhead() {
-        return NativeCrypto.SSL_max_seal_overhead(ssl, this);
-    }
+    // int getMaxSealOverhead() {
+    //     return NativeCrypto.SSL_max_seal_overhead(ssl, this);
+    // }
 
     void close() {
         lock.writeLock().lock();

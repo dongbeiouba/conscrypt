@@ -952,7 +952,7 @@ public final class NativeCrypto {
 
     static native void SSL_set_signed_cert_timestamp_list(long ssl, NativeSsl ssl_holder, byte[] list);
 
-//     static native void SSL_enable_ocsp_stapling(long ssl, NativeSsl ssl_holder);
+    static native void SSL_enable_ocsp_stapling(long ssl, NativeSsl ssl_holder);
 
     static native byte[] SSL_get_ocsp_response(long ssl, NativeSsl ssl_holder);
 
@@ -1357,7 +1357,7 @@ public final class NativeCrypto {
     /**
      * Returns the maximum overhead, in bytes, of sealing a record with SSL.
      */
-    static native int SSL_max_seal_overhead(long ssl, NativeSsl ssl_holder);
+//     static native int SSL_max_seal_overhead(long ssl, NativeSsl ssl_holder);
 
     /**
      * Enables ALPN for this TLS endpoint and sets the list of supported ALPN protocols in

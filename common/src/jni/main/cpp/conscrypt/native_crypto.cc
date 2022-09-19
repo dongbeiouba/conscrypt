@@ -60,7 +60,7 @@ using conscrypt::CompatibilityCloseMonitor;
 using conscrypt::NativeCrypto;
 using conscrypt::SslError;
 
-static BIO_METHOD *stream_bio_method;
+static BIO_METHOD *stream_bio_method = nullptr;
 
 /**
  * Helper function that grabs the casts an ssl pointer and then checks for nullness.
@@ -427,34 +427,32 @@ static jbyteArray Buf2ByteArray(JNIEnv* env, unsigned char *buf, size_t len)
 //     return ret;
 // }
 
-// static jobjectArray CryptoBuffersToObjectArray(JNIEnv* env,
-//                                                const STACK_OF(CRYPTO_BUFFER) * buffers) {
-//     size_t numBuffers = sk_CRYPTO_BUFFER_num(buffers);
-//     if (numBuffers > INT_MAX) {
-//         JNI_TRACE("too many buffers");
-//         conscrypt::jniutil::throwRuntimeException(env, "too many buffers");
-//         return nullptr;
-//     }
+static jobjectArray X509s_to_ObjectArray(JNIEnv* env,
+                                         const STACK_OF(X509) *certs) {
+    if (certs == nullptr) {
+        return nullptr;
+    }
 
-//     ScopedLocalRef<jobjectArray> array(
-//             env, env->NewObjectArray(static_cast<int>(numBuffers),
-//                                      conscrypt::jniutil::byteArrayClass, nullptr));
-//     if (array.get() == nullptr) {
-//         JNI_TRACE("failed to allocate array");
-//         return nullptr;
-//     }
+    size_t num = sk_X509_num(certs);
+    ScopedLocalRef<jobjectArray> array(
+        env, env->NewObjectArray(static_cast<int>(num),
+                                 conscrypt::jniutil::byteArrayClass, nullptr));
+    if (array.get() == nullptr) {
+        JNI_TRACE("failed to allocate array");
+        return nullptr;
+    }
 
-//     for (size_t i = 0; i < numBuffers; ++i) {
-//         CRYPTO_BUFFER* buffer = sk_CRYPTO_BUFFER_value(buffers, i);
-//         ScopedLocalRef<jbyteArray> bArray(env, CryptoBufferToByteArray(env, buffer));
-//         if (bArray.get() == nullptr) {
-//             return nullptr;
-//         }
-//         env->SetObjectArrayElement(array.get(), i, bArray.get());
-//     }
+    for (size_t i = 0; i < num; i++) {
+        X509* cert = sk_X509_value(certs, i);
+        ScopedLocalRef<jbyteArray> bArray(env, ASN1ToByteArray<X509>(env, cert, i2d_X509));
+        if (bArray.get() == nullptr) {
+            return nullptr;
+        }
+        env->SetObjectArrayElement(array.get(), i, bArray.get());
+    }
 
-//     return array.release();
-// }
+    return array.release();
+}
 
 /**
  * Converts ASN.1 BIT STRING to a jbooleanArray.
@@ -4127,8 +4125,8 @@ static void NativeCrypto_RAND_bytes(JNIEnv* env, jclass, jbyteArray output) {
 //     return env->NewStringUTF(output);
 // }
 
-static BIO_METHOD *create_bio_stream(void) {
-    if (stream_bio_method)
+static BIO_METHOD *create_bio_meth(void) {
+    if (stream_bio_method != nullptr)
         return stream_bio_method;
 
     BIO_METHOD *meth = BIO_meth_new(100 | BIO_TYPE_SOURCE_SINK,
@@ -4148,6 +4146,8 @@ static BIO_METHOD *create_bio_stream(void) {
         return nullptr;
     }
 
+    JNI_TRACE("create_bio_meth => %p", meth);
+
     stream_bio_method = meth;
     return meth;
 }
@@ -4155,14 +4155,14 @@ static BIO_METHOD *create_bio_stream(void) {
 static jlong NativeCrypto_create_BIO_InputStream(JNIEnv* env, jclass, jobject streamObj,
                                                  jboolean isFinite) {
     CHECK_ERROR_QUEUE_ON_RETURN;
-    JNI_TRACE("create_BIO_InputStream(%p)", streamObj);
+    JNI_TRACE("NativeCrypto_create_BIO_InputStream(%p)", streamObj);
 
     if (streamObj == nullptr) {
         conscrypt::jniutil::throwNullPointerException(env, "stream == null");
         return 0;
     }
 
-    BIO_METHOD *meth = create_bio_stream();
+    BIO_METHOD *meth = create_bio_meth();
     if (meth == nullptr)
         return 0;
 
@@ -4172,20 +4172,20 @@ static jlong NativeCrypto_create_BIO_InputStream(JNIEnv* env, jclass, jobject st
 
     bio_stream_assign(bio, new BioInputStream(streamObj, isFinite == JNI_TRUE));
 
-    JNI_TRACE("create_BIO_InputStream(%p) => %p", streamObj, bio);
+    JNI_TRACE("NativeCrypto_create_BIO_InputStream(%p) => %p", streamObj, bio);
     return static_cast<jlong>(reinterpret_cast<uintptr_t>(bio));
 }
 
 static jlong NativeCrypto_create_BIO_OutputStream(JNIEnv* env, jclass, jobject streamObj) {
     CHECK_ERROR_QUEUE_ON_RETURN;
-    JNI_TRACE("create_BIO_OutputStream(%p)", streamObj);
+    JNI_TRACE("NativeCrypto_create_BIO_OutputStream(%p)", streamObj);
 
     if (streamObj == nullptr) {
         conscrypt::jniutil::throwNullPointerException(env, "stream == null");
         return 0;
     }
 
-    BIO_METHOD *meth = create_bio_stream();
+    BIO_METHOD *meth = create_bio_meth();
     if (meth == nullptr)
         return 0;
 
@@ -4195,7 +4195,7 @@ static jlong NativeCrypto_create_BIO_OutputStream(JNIEnv* env, jclass, jobject s
 
     bio_stream_assign(bio, new BioOutputStream(streamObj));
 
-    JNI_TRACE("create_BIO_OutputStream(%p) => %p", streamObj, bio);
+    JNI_TRACE("NativeCrypto_create_BIO_OutputStream(%p) => %p", streamObj, bio);
     return static_cast<jlong>(reinterpret_cast<uintptr_t>(bio));
 }
 
@@ -7696,51 +7696,51 @@ static jint NativeCrypto_SSL_set_protocol_versions(JNIEnv* env, jclass, jlong ss
 /*
  * public static native void SSL_enable_ocsp_stapling(long ssl);
  */
-// static void NativeCrypto_SSL_enable_ocsp_stapling(JNIEnv* env, jclass, jlong ssl_address,
-//                                                   CONSCRYPT_UNUSED jobject ssl_holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     SSL* ssl = to_SSL(env, ssl_address, true);
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_enable_ocsp_stapling", ssl);
-//     if (ssl == nullptr) {
-//         return;
-//     }
+static void NativeCrypto_SSL_enable_ocsp_stapling(JNIEnv* env, jclass, jlong ssl_address,
+                                                  CONSCRYPT_UNUSED jobject ssl_holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    SSL* ssl = to_SSL(env, ssl_address, true);
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_enable_ocsp_stapling", ssl);
+    if (ssl == nullptr) {
+        return;
+    }
 
-//     SSL_enable_ocsp_stapling(ssl);
-// }
+    SSL_set_tlsext_status_type(ssl, TLSEXT_STATUSTYPE_ocsp);
+}
 
 /*
  * public static native byte[] SSL_get_ocsp_response(long ssl);
  */
-// static jbyteArray NativeCrypto_SSL_get_ocsp_response(JNIEnv* env, jclass, jlong ssl_address,
-//                                                      CONSCRYPT_UNUSED jobject ssl_holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     SSL* ssl = to_SSL(env, ssl_address, true);
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_get_ocsp_response", ssl);
-//     if (ssl == nullptr) {
-//         return nullptr;
-//     }
+static jbyteArray NativeCrypto_SSL_get_ocsp_response(JNIEnv* env, jclass, jlong ssl_address,
+                                                     CONSCRYPT_UNUSED jobject ssl_holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    SSL* ssl = to_SSL(env, ssl_address, true);
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_get_ocsp_response", ssl);
+    if (ssl == nullptr) {
+        return nullptr;
+    }
 
-//     const uint8_t* data;
-//     size_t data_len;
-//     SSL_get0_ocsp_response(ssl, &data, &data_len);
+    unsigned char *data = nullptr;
+    long data_len;
+    data_len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
 
-//     if (data_len == 0) {
-//         JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => null", ssl);
-//         return nullptr;
-//     }
+    if (data == nullptr || data_len <= 0) {
+        JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => null", ssl);
+        return nullptr;
+    }
 
-//     ScopedLocalRef<jbyteArray> byteArray(env, env->NewByteArray(static_cast<jsize>(data_len)));
-//     if (byteArray.get() == nullptr) {
-//         JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => creating byte array failed", ssl);
-//         return nullptr;
-//     }
+    ScopedLocalRef<jbyteArray> byteArray(env, env->NewByteArray(static_cast<jsize>(data_len)));
+    if (byteArray.get() == nullptr) {
+        JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => creating byte array failed", ssl);
+        return nullptr;
+    }
 
-//     env->SetByteArrayRegion(byteArray.get(), 0, static_cast<jsize>(data_len), (const jbyte*)data);
-//     JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => %p [size=%zd]", ssl, byteArray.get(),
-//               data_len);
+    env->SetByteArrayRegion(byteArray.get(), 0, static_cast<jsize>(data_len), (const jbyte*)data);
+    JNI_TRACE("NativeCrypto_SSL_get_ocsp_response(%p) => %p [size=%zd]", ssl, byteArray.get(),
+              data_len);
 
-//     return byteArray.release();
-// }
+    return byteArray.release();
+}
 
 /*
  * public static native void SSL_set_ocsp_response(long ssl, byte[] response);
@@ -8599,28 +8599,68 @@ static jstring NativeCrypto_SSL_get_version(JNIEnv* env, jclass, jlong ssl_addre
     return env->NewStringUTF(protocol);
 }
 
-// static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass, jlong ssl_address,
-//                                                             CONSCRYPT_UNUSED jobject ssl_holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     SSL* ssl = to_SSL(env, ssl_address, true);
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_get0_peer_certificates", ssl);
-//     if (ssl == nullptr) {
-//         return nullptr;
-//     }
+static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass, jlong ssl_address,
+                                                            CONSCRYPT_UNUSED jobject ssl_holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509 *leaf = nullptr;
+    bool need_free = 0;
+    STACK_OF(X509) *all = nullptr;
+    SSL* ssl = to_SSL(env, ssl_address, true);
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_get0_peer_certificates", ssl);
+    if (ssl == nullptr) {
+        return nullptr;
+    }
 
-//     const STACK_OF(CRYPTO_BUFFER)* chain = SSL_get0_peer_certificates(ssl);
-//     if (chain == nullptr) {
-//         return nullptr;
-//     }
+    /* if called on the client side, the stack also contains the peer's certificate */
+    STACK_OF(X509) *chain = SSL_get_peer_cert_chain(ssl);
+    if (!SSL_is_server(ssl)) {
+        if (chain == nullptr) {
+            return nullptr;
+        }
 
-//     ScopedLocalRef<jobjectArray> array(env, CryptoBuffersToObjectArray(env, chain));
-//     if (array.get() == nullptr) {
-//         return nullptr;
-//     }
+        all = chain;
+    } else {
+        leaf = SSL_get0_peer_certificate(ssl);
 
-//     JNI_TRACE("ssl=%p NativeCrypto_SSL_get0_peer_certificates => %p", ssl, array.get());
-//     return array.release();
-// }
+        if (chain == nullptr && leaf == nullptr) {
+            return nullptr;
+        } else if (leaf == nullptr) {
+            all = chain;
+        } else if (chain == nullptr) {
+            all = sk_X509_new_null();
+
+            need_free = 1;
+            if (sk_X509_push(all, leaf) <= 0) {
+                sk_X509_free(all);
+                return nullptr;
+            }
+        } else {
+            all = sk_X509_dup(chain);
+            if (all == nullptr) {
+                return nullptr;
+            }
+
+            need_free = 1;
+            if (sk_X509_push(all, leaf) <= 0) {
+                sk_X509_free(all);
+                return nullptr;
+            }
+        }
+    }
+
+    ScopedLocalRef<jobjectArray> array(env, X509s_to_ObjectArray(env, all));
+
+    if (need_free) {
+        sk_X509_free(all);
+    }
+
+    if (array.get() == nullptr) {
+        return nullptr;
+    }
+
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_get0_peer_certificates => %p", ssl, array.get());
+    return array.release();
+}
 
 static int sslRead(JNIEnv* env, SSL* ssl, jobject fdObject, jobject shc, char* buf, jint len,
                    SslError* sslError, int read_timeout_millis) {
@@ -10869,8 +10909,8 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         // CONSCRYPT_NATIVE_METHOD(SSL_enable_signed_cert_timestamps, "(J" REF_SSL ")V"),
         // CONSCRYPT_NATIVE_METHOD(SSL_get_signed_cert_timestamp_list, "(J" REF_SSL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(SSL_set_signed_cert_timestamp_list, "(J" REF_SSL "[B)V"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_enable_ocsp_stapling, "(J" REF_SSL ")V"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_get_ocsp_response, "(J" REF_SSL ")[B"),
+        CONSCRYPT_NATIVE_METHOD(SSL_enable_ocsp_stapling, "(J" REF_SSL ")V"),
+        CONSCRYPT_NATIVE_METHOD(SSL_get_ocsp_response, "(J" REF_SSL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(SSL_set_ocsp_response, "(J" REF_SSL "[B)V"),
         // CONSCRYPT_NATIVE_METHOD(SSL_get_tls_unique, "(J" REF_SSL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(SSL_export_keying_material, "(J" REF_SSL "[B[BI)[B"),
@@ -10891,7 +10931,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(SSL_do_handshake, "(J" REF_SSL FILE_DESCRIPTOR SSL_CALLBACKS "I)V"),
         CONSCRYPT_NATIVE_METHOD(SSL_get_current_cipher, "(J" REF_SSL ")Ljava/lang/String;"),
         CONSCRYPT_NATIVE_METHOD(SSL_get_version, "(J" REF_SSL ")Ljava/lang/String;"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_get0_peer_certificates, "(J" REF_SSL ")[[B"),
+        CONSCRYPT_NATIVE_METHOD(SSL_get0_peer_certificates, "(J" REF_SSL ")[[B"),
         CONSCRYPT_NATIVE_METHOD(SSL_read, "(J" REF_SSL FILE_DESCRIPTOR SSL_CALLBACKS "[BIII)I"),
         CONSCRYPT_NATIVE_METHOD(SSL_write, "(J" REF_SSL FILE_DESCRIPTOR SSL_CALLBACKS "[BIII)V"),
         CONSCRYPT_NATIVE_METHOD(SSL_interrupt, "(J" REF_SSL ")V"),
@@ -10927,13 +10967,13 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(SSL_pending_readable_bytes, "(J" REF_SSL ")I"),
         CONSCRYPT_NATIVE_METHOD(SSL_pending_written_bytes_in_BIO, "(J)I"),
         CONSCRYPT_NATIVE_METHOD(SSL_get_error, "(J" REF_SSL "I)I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_do_handshake, "(J" REF_SSL SSL_CALLBACKS ")I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_read_direct, "(J" REF_SSL "JI" SSL_CALLBACKS ")I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_write_direct, "(J" REF_SSL "JI" SSL_CALLBACKS ")I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_write_BIO_direct, "(J" REF_SSL "JJI" SSL_CALLBACKS ")I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_read_BIO_direct, "(J" REF_SSL "JJI" SSL_CALLBACKS ")I"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_force_read, "(J" REF_SSL SSL_CALLBACKS ")V"),
-        // CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_shutdown, "(J" REF_SSL SSL_CALLBACKS ")V"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_do_handshake, "(J" REF_SSL SSL_CALLBACKS ")I"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_read_direct, "(J" REF_SSL "JI" SSL_CALLBACKS ")I"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_write_direct, "(J" REF_SSL "JI" SSL_CALLBACKS ")I"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_write_BIO_direct, "(J" REF_SSL "JJI" SSL_CALLBACKS ")I"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_read_BIO_direct, "(J" REF_SSL "JJI" SSL_CALLBACKS ")I"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_force_read, "(J" REF_SSL SSL_CALLBACKS ")V"),
+        CONSCRYPT_NATIVE_METHOD(ENGINE_SSL_shutdown, "(J" REF_SSL SSL_CALLBACKS ")V"),
         // CONSCRYPT_NATIVE_METHOD(usesBoringSsl_FIPS_mode, "()Z"),
         // CONSCRYPT_NATIVE_METHOD(Scrypt_generate_key, "([B[BIIII)[B"),
 
