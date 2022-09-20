@@ -8623,7 +8623,7 @@ static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass,
 
         all = chain;
     } else {
-        leaf = SSL_get0_peer_certificate(ssl);
+        leaf = SSL_get_peer_certificate(ssl);
 
         if (chain == nullptr && leaf == nullptr) {
             return nullptr;
@@ -8634,6 +8634,7 @@ static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass,
 
             need_free = 1;
             if (sk_X509_push(all, leaf) <= 0) {
+                X509_free(leaf);
                 sk_X509_free(all);
                 return nullptr;
             }
@@ -8645,6 +8646,7 @@ static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass,
 
             need_free = 1;
             if (sk_X509_push(all, leaf) <= 0) {
+                X509_free(leaf);
                 sk_X509_free(all);
                 return nullptr;
             }
@@ -8652,6 +8654,10 @@ static jobjectArray NativeCrypto_SSL_get0_peer_certificates(JNIEnv* env, jclass,
     }
 
     ScopedLocalRef<jobjectArray> array(env, X509s_to_ObjectArray(env, all));
+
+    if (leaf) {
+        X509_free(leaf);
+    }
 
     if (need_free) {
         sk_X509_free(all);

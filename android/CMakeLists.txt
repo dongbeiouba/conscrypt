@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-link_directories(BEFORE ${TONGSUO_HOME}/lib64/ ${TONGSUO_HOME}/lib/)
+link_directories(BEFORE ${TONGSUO_HOME}/lib/)
 
 add_library(conscrypt_jni
             SHARED
