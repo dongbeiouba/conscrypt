@@ -7966,6 +7966,7 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
     if (length == 0) {
         JNI_TRACE("ssl=%p NativeCrypto_SSL_set_cipher_lists cipherSuites=empty", ssl);
         SSL_set_cipher_list(ssl, "");
+        SSL_set_ciphersuites(ssl, "");
         ERR_clear_error();
         if (sk_SSL_CIPHER_num(SSL_get_ciphers(ssl)) != 0) {
             JNI_TRACE("ssl=%p NativeCrypto_SSL_set_cipher_lists cipherSuites=empty => error", ssl);
@@ -7991,7 +7992,10 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
                                                "Overflow in cipher suite strings");
             return;
         }
-        cipherStringLen += 1; /* For the separating colon */
+
+        if (cipherStringLen != 0) {
+            cipherStringLen += 1; /* For the separating colon */
+        }
 
         if (cipherStringLen + c.size() < cipherStringLen) {
             conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
