@@ -307,11 +307,10 @@ model {
 
                     // Set up 32-bit vs 64-bit build
                     def building64Bit = false
-                    def libPath
+                    def libPath = "$tongsuoLibDir"
                     if (targetPlatform.getArchitecture().getName() == "x86") {
-                        libPath = "$tongsuoLibDir"
+                        // nothing
                     } else if (targetPlatform.getArchitecture().getName() == "x86-64") {
-                        libPath = "$tongsuoLibDir"
                         building64Bit = true
                     } else {
                         throw new GradleException("Unknown architecture: " +
