@@ -51,6 +51,8 @@
 #include <limits>
 #include <type_traits>
 #include <vector>
+#include <set>
+#include <string>
 
 using conscrypt::AppData;
 using conscrypt::BioInputStream;
@@ -61,6 +63,14 @@ using conscrypt::NativeCrypto;
 using conscrypt::SslError;
 
 static BIO_METHOD *stream_bio_method = nullptr;
+
+static const std::set<std::string> tls13_ciphersuites = {
+    "TLS_AES_128_GCM_SHA256",
+    "TLS_AES_256_GCM_SHA384",
+    "TLS_CHACHA20_POLY1305_SHA256",
+    "TLS_SM4_GCM_SM3",
+    "TLS_SM4_CCM_SM3"
+};
 
 /**
  * Helper function that grabs the casts an ssl pointer and then checks for nullness.
@@ -8020,11 +8030,14 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
     cipherStringLen += 1; /* For final NUL. */
 
     std::unique_ptr<char[]> cipherString(new char[cipherStringLen]);
-    if (cipherString.get() == nullptr) {
+    std::unique_ptr<char[]> tls13CipherString(new char[cipherStringLen]);
+    if (cipherString.get() == nullptr || tls13CipherString.get() == nullptr) {
         conscrypt::jniutil::throwOutOfMemory(env, "Unable to alloc cipher string");
         return;
     }
+
     size_t j = 0;
+    size_t k = 0;
 
     for (int i = 0; i < length; i++) {
         ScopedLocalRef<jstring> cipherSuite(
@@ -8037,26 +8050,45 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
             name = c.c_str();
         }
 
-        if (j != 0) {
-            cipherString[j++] = ':';
-        }
+        if (tls13_ciphersuites.find(name) != tls13_ciphersuites.end()) {
+            if (k != 0) {
+                tls13CipherString[k++] = ':';
+            }
 
-        memcpy(&cipherString[j], name, strlen(name));
-        j += strlen(name);
+            memcpy(&tls13CipherString[k], name, strlen(name));
+            k += strlen(name);
+        } else {
+            if (j != 0) {
+                cipherString[j++] = ':';
+            }
+
+            memcpy(&cipherString[j], name, strlen(name));
+            j += strlen(name);
+        }
     }
 
     cipherString[j++] = 0;
-    if (j != cipherStringLen) {
+    tls13CipherString[k++] = 0;
+
+    if (j + k - 1 != cipherStringLen) {
         conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
                                            "Internal error");
         return;
     }
 
     JNI_TRACE("ssl=%p NativeCrypto_SSL_set_cipher_lists cipherSuites=%s", ssl, cipherString.get());
-    if (!SSL_set_cipher_list(ssl, cipherString.get())) {
+    if (j > 1 && !SSL_set_cipher_list(ssl, cipherString.get())) {
         ERR_clear_error();
         conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
                                            "Illegal cipher suite strings.");
+        return;
+    }
+
+    JNI_TRACE("ssl=%p NativeCrypto_SSL_set_cipher_lists TLS1.3 cipherSuites=%s", ssl, tls13CipherString.get());
+    if (k > 1 && !SSL_set_ciphersuites(ssl, tls13CipherString.get())) {
+        ERR_clear_error();
+        conscrypt::jniutil::throwException(env, "java/lang/IllegalArgumentException",
+                                           "Illegal tls1.3 cipher suite strings.");
         return;
     }
 }

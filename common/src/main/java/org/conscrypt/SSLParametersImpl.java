@@ -74,8 +74,7 @@ final class SSLParametersImpl implements Cloneable {
     String[] enabledProtocols;
     // set to indicate when obsolete protocols are filtered
     boolean isEnabledProtocolsFiltered;
-    // The TLS 1.0-1.2 cipher suites enabled for the SSL connection.  TLS 1.3 cipher suites
-    // cannot be customized, so for simplicity this field never contains any TLS 1.3 suites.
+    // The TLS 1.0-1.2 and TLS 1.3 cipher suites enabled for the SSL connection
     String[] enabledCipherSuites;
 
     // if the peer with this parameters tuned to work in client mode
@@ -258,12 +257,8 @@ final class SSLParametersImpl implements Cloneable {
      * Sets the enabled cipher suites after filtering through OpenSSL.
      */
     void setEnabledCipherSuites(String[] cipherSuites) {
-        // Filter out any TLS 1.3 cipher suites the user may have passed.  Our TLS 1.3 suites
-        // are always enabled, no matter what the user requests, so we only store the 1.0-1.2
-        // suites in enabledCipherSuites.
-        enabledCipherSuites = NativeCrypto.checkEnabledCipherSuites(
-                filterFromCipherSuites(cipherSuites,
-                        NativeCrypto.SUPPORTED_TLS_1_3_CIPHER_SUITES_SET));
+        // include 1.0-1.2 and TLS 1.3 cipher suites
+        enabledCipherSuites = NativeCrypto.checkEnabledCipherSuites(cipherSuites);
     }
 
     /**
