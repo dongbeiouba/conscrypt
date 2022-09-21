@@ -7976,8 +7976,7 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
         return;
     }
 
-    static const char noSSLv2[] = "!SSLv2";
-    size_t cipherStringLen = strlen(noSSLv2);
+    size_t cipherStringLen = 0;
 
     for (int i = 0; i < length; i++) {
         ScopedLocalRef<jstring> cipherSuite(
@@ -8021,8 +8020,7 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
         conscrypt::jniutil::throwOutOfMemory(env, "Unable to alloc cipher string");
         return;
     }
-    memcpy(cipherString.get(), noSSLv2, strlen(noSSLv2));
-    size_t j = strlen(noSSLv2);
+    size_t j = 0;
 
     for (int i = 0; i < length; i++) {
         ScopedLocalRef<jstring> cipherSuite(
@@ -8035,7 +8033,10 @@ static void NativeCrypto_SSL_set_cipher_lists(JNIEnv* env, jclass, jlong ssl_add
             name = c.c_str();
         }
 
-        cipherString[j++] = ':';
+        if (j != 0) {
+            cipherString[j++] = ':';
+        }
+
         memcpy(&cipherString[j], name, strlen(name));
         j += strlen(name);
     }

@@ -746,6 +746,8 @@ public final class NativeCrypto {
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
             "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_SM4_GCM_SM3",
+            "TLS_SM4_CCM_SM3",
     };
 
     // SUPPORTED_TLS_1_2_CIPHER_SUITES_SET contains all the supported cipher suites for TLS 1.2,

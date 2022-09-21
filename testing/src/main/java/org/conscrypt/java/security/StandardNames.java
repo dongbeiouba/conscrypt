@@ -249,6 +249,8 @@ public final class StandardNames {
         addOpenSsl("TLS_AES_128_GCM_SHA256");
         addOpenSsl("TLS_AES_256_GCM_SHA384");
         addOpenSsl("TLS_CHACHA20_POLY1305_SHA256");
+        addOpenSsl("TLS_SM4_GCM_SM3");
+        addOpenSsl("TLS_SM4_CCM_SM3");
 
         // RFC 5746's Signaling Cipher Suite Value to indicate a request for secure renegotiation
         addOpenSsl(CIPHER_SUITE_SECURE_RENEGOTIATION);
@@ -279,7 +281,9 @@ public final class StandardNames {
     public static final List<String> CIPHER_SUITES_TLS13 = Arrays.asList(
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
-            "TLS_CHACHA20_POLY1305_SHA256");
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_SM4_GCM_SM3",
+            "TLS_SM4_CCM_SM3");
 
     // NOTE: This list needs to be kept in sync with Javadoc of javax.net.ssl.SSLSocket and
     // javax.net.ssl.SSLEngine.
@@ -287,6 +291,8 @@ public final class StandardNames {
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
             "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_SM4_GCM_SM3",
+            "TLS_SM4_CCM_SM3",
             "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
             "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
@@ -309,6 +315,8 @@ public final class StandardNames {
             "TLS_AES_128_GCM_SHA256",
             "TLS_AES_256_GCM_SHA384",
             "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_SM4_GCM_SM3",
+            "TLS_SM4_CCM_SM3",
             "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
