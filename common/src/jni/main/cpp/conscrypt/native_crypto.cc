@@ -4115,26 +4115,26 @@ static void NativeCrypto_RAND_bytes(JNIEnv* env, jclass, jbyteArray output) {
     JNI_TRACE("NativeCrypto_RAND_bytes(%p) => success", output);
 }
 
-// static jstring ASN1_OBJECT_to_OID_string(JNIEnv* env, const ASN1_OBJECT* obj) {
-//     /*
-//      * The OBJ_obj2txt API doesn't "measure" if you pass in nullptr as the buffer.
-//      * Just make a buffer that's large enough here. The documentation recommends
-//      * 80 characters.
-//      */
-//     char output[128];
-//     int ret = OBJ_obj2txt(output, sizeof(output), obj, 1);
-//     if (ret < 0) {
-//         conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "ASN1_OBJECT_to_OID_string");
-//         return nullptr;
-//     } else if (size_t(ret) >= sizeof(output)) {
-//         conscrypt::jniutil::throwRuntimeException(env,
-//                                                   "ASN1_OBJECT_to_OID_string buffer too small");
-//         return nullptr;
-//     }
+static jstring ASN1_OBJECT_to_OID_string(JNIEnv* env, const ASN1_OBJECT* obj) {
+    /*
+     * The OBJ_obj2txt API doesn't "measure" if you pass in nullptr as the buffer.
+     * Just make a buffer that's large enough here. The documentation recommends
+     * 80 characters.
+     */
+    char output[128];
+    int ret = OBJ_obj2txt(output, sizeof(output), obj, 1);
+    if (ret < 0) {
+        conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "ASN1_OBJECT_to_OID_string");
+        return nullptr;
+    } else if (size_t(ret) >= sizeof(output)) {
+        conscrypt::jniutil::throwRuntimeException(env,
+                                                  "ASN1_OBJECT_to_OID_string buffer too small");
+        return nullptr;
+    }
 
-//     JNI_TRACE("ASN1_OBJECT_to_OID_string(%p) => %s", obj, output);
-//     return env->NewStringUTF(output);
-// }
+    JNI_TRACE("ASN1_OBJECT_to_OID_string(%p) => %s", obj, output);
+    return env->NewStringUTF(output);
+}
 
 static BIO_METHOD *create_bio_meth(void) {
     if (stream_bio_method != nullptr)
@@ -6146,23 +6146,23 @@ static jbyteArray NativeCrypto_X509_get_subject_name(JNIEnv* env, jclass, jlong 
     return ASN1ToByteArray<X509_NAME>(env, X509_get_subject_name(x509), i2d_X509_NAME);
 }
 
-// static jstring NativeCrypto_get_X509_pubkey_oid(JNIEnv* env, jclass, jlong x509Ref,
-//                                                 CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("get_X509_pubkey_oid(%p)", x509);
+static jstring NativeCrypto_get_X509_pubkey_oid(JNIEnv* env, jclass, jlong x509Ref,
+                                                CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("get_X509_pubkey_oid(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("get_X509_pubkey_oid(%p) => x509 == null", x509);
-//         return nullptr;
-//     }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("get_X509_pubkey_oid(%p) => x509 == null", x509);
+        return nullptr;
+    }
 
-//     X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
-//     ASN1_OBJECT* algorithm;
-//     X509_PUBKEY_get0_param(&algorithm, nullptr, nullptr, nullptr, pubkey);
-//     return ASN1_OBJECT_to_OID_string(env, algorithm);
-// }
+    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+    ASN1_OBJECT* algorithm;
+    X509_PUBKEY_get0_param(&algorithm, nullptr, nullptr, nullptr, pubkey);
+    return ASN1_OBJECT_to_OID_string(env, algorithm);
+}
 
 // static jstring NativeCrypto_get_X509_sig_alg_oid(JNIEnv* env, jclass, jlong x509Ref,
 //                                                  CONSCRYPT_UNUSED jobject holder) {
@@ -10864,7 +10864,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(X509_get_pubkey, "(J" REF_X509 ")J"),
         // CONSCRYPT_NATIVE_METHOD(X509_get_issuer_name, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(X509_get_subject_name, "(J" REF_X509 ")[B"),
-        // CONSCRYPT_NATIVE_METHOD(get_X509_pubkey_oid, "(J" REF_X509 ")Ljava/lang/String;"),
+        CONSCRYPT_NATIVE_METHOD(get_X509_pubkey_oid, "(J" REF_X509 ")Ljava/lang/String;"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_sig_alg_oid, "(J" REF_X509 ")Ljava/lang/String;"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_sig_alg_parameter, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_issuerUID, "(J" REF_X509 ")[Z"),
