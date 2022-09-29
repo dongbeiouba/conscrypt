@@ -7180,7 +7180,7 @@ static jlong NativeCrypto_SSL_CTX_new(JNIEnv* env, jclass) {
     SSL_CTX_set_mode(sslCtx, mode);
 
     SSL_CTX_set_info_callback(sslCtx, info_callback);
-    SSL_CTX_set_cert_cb(sslCtx, cert_cb, nullptr);
+    // SSL_CTX_set_cert_cb(sslCtx, cert_cb, nullptr);
     // SSL_CTX_set_select_certificate_cb(sslCtx, select_certificate_cb);
     if (conscrypt::trace::kWithJniTraceKeys) {
         SSL_CTX_set_keylog_callback(sslCtx, debug_print_session_key);
