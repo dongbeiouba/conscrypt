@@ -4460,65 +4460,67 @@ static jlong NativeCrypto_X509_get_notAfter(JNIEnv* env, jclass, jlong x509Ref,
 }
 
 // NOLINTNEXTLINE(runtime/int)
-// static long NativeCrypto_X509_get_version(JNIEnv* env, jclass, jlong x509Ref,
-//                                           CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("X509_get_version(%p)", x509);
+static long NativeCrypto_X509_get_version(JNIEnv* env, jclass, jlong x509Ref,
+                                          CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("X509_get_version(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("X509_get_version(%p) => x509 == null", x509);
-//         return 0;
-//     }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("X509_get_version(%p) => x509 == null", x509);
+        return 0;
+    }
 
-//     // NOLINTNEXTLINE(runtime/int)
-//     long version = X509_get_version(x509);
-//     JNI_TRACE("X509_get_version(%p) => %ld", x509, version);
-//     return version;
-// }
+    // NOLINTNEXTLINE(runtime/int)
+    long version = X509_get_version(x509);
+    JNI_TRACE("X509_get_version(%p) => %ld", x509, version);
+    return version;
+}
 
-// template <typename T>
-// static jbyteArray get_X509Type_serialNumber(JNIEnv* env, const T* x509Type,
-//                                             const ASN1_INTEGER* (*get_serial_func)(const T*)) {
-//     JNI_TRACE("get_X509Type_serialNumber(%p)", x509Type);
+template <typename T>
+static jbyteArray get_X509Type_serialNumber(JNIEnv* env, const T* x509Type,
+                                            const ASN1_INTEGER* (*get_serial_func)(const T*)) {
+    JNI_TRACE("get_X509Type_serialNumber(%p)", x509Type);
 
-//     if (x509Type == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509Type == null");
-//         JNI_TRACE("get_X509Type_serialNumber(%p) => x509Type == null", x509Type);
-//         return nullptr;
-//     }
+    if (x509Type == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509Type == null");
+        JNI_TRACE("get_X509Type_serialNumber(%p) => x509Type == null", x509Type);
+        return nullptr;
+    }
 
-//     const ASN1_INTEGER* serialNumber = get_serial_func(x509Type);
-//     bssl::UniquePtr<BIGNUM> serialBn(ASN1_INTEGER_to_BN(serialNumber, nullptr));
-//     if (serialBn.get() == nullptr) {
-//         JNI_TRACE("X509_get_serialNumber(%p) => threw exception", x509Type);
-//         return nullptr;
-//     }
+    const ASN1_INTEGER* serialNumber = get_serial_func(x509Type);
+    BIGNUM *serialBn = ASN1_INTEGER_to_BN(serialNumber, nullptr);
+    if (serialBn == nullptr) {
+        JNI_TRACE("X509_get_serialNumber(%p) => threw exception", x509Type);
+        return nullptr;
+    }
 
-//     ScopedLocalRef<jbyteArray> serialArray(env, bignumToArray(env, serialBn.get(), "serialBn"));
-//     if (env->ExceptionCheck()) {
-//         JNI_TRACE("X509_get_serialNumber(%p) => threw exception", x509Type);
-//         return nullptr;
-//     }
+    ScopedLocalRef<jbyteArray> serialArray(env, bignumToArray(env, serialBn, "serialBn"));
+    if (env->ExceptionCheck()) {
+        BN_free(serialBn);
+        JNI_TRACE("X509_get_serialNumber(%p) => threw exception", x509Type);
+        return nullptr;
+    }
 
-//     JNI_TRACE("X509_get_serialNumber(%p) => %p", x509Type, serialArray.get());
-//     return serialArray.release();
-// }
+    BN_free(serialBn);
+    JNI_TRACE("X509_get_serialNumber(%p) => %p", x509Type, serialArray.get());
+    return serialArray.release();
+}
 
-// static jbyteArray NativeCrypto_X509_get_serialNumber(JNIEnv* env, jclass, jlong x509Ref,
-//                                                      CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("X509_get_serialNumber(%p)", x509);
+static jbyteArray NativeCrypto_X509_get_serialNumber(JNIEnv* env, jclass, jlong x509Ref,
+                                                     CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("X509_get_serialNumber(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("X509_get_serialNumber(%p) => x509 == null", x509);
-//         return nullptr;
-//     }
-//     return get_X509Type_serialNumber<X509>(env, x509, X509_get0_serialNumber);
-// }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("X509_get_serialNumber(%p) => x509 == null", x509);
+        return nullptr;
+    }
+    return get_X509Type_serialNumber<X509>(env, x509, X509_get0_serialNumber);
+}
 
 // static jbyteArray NativeCrypto_X509_REVOKED_get_serialNumber(JNIEnv* env, jclass,
 //                                                              jlong x509RevokedRef) {
@@ -4990,54 +4992,56 @@ static jlong NativeCrypto_X509_get_notAfter(JNIEnv* env, jclass, jlong x509Ref,
 //     return version;
 // }
 
-// template <typename T, int (*get_ext_by_OBJ_func)(const T*, const ASN1_OBJECT*, int),
-//           X509_EXTENSION* (*get_ext_func)(const T*, int)>
-// static X509_EXTENSION* X509Type_get_ext(JNIEnv* env, const T* x509Type, jstring oidString) {
-//     JNI_TRACE("X509Type_get_ext(%p)", x509Type);
+template <typename T, int (*get_ext_by_OBJ_func)(const T*, const ASN1_OBJECT*, int),
+          X509_EXTENSION* (*get_ext_func)(const T*, int)>
+static X509_EXTENSION* X509Type_get_ext(JNIEnv* env, const T* x509Type, jstring oidString) {
+    JNI_TRACE("X509Type_get_ext(%p)", x509Type);
 
-//     if (x509Type == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         return nullptr;
-//     }
+    if (x509Type == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        return nullptr;
+    }
 
-//     ScopedUtfChars oid(env, oidString);
-//     if (oid.c_str() == nullptr) {
-//         return nullptr;
-//     }
+    ScopedUtfChars oid(env, oidString);
+    if (oid.c_str() == nullptr) {
+        return nullptr;
+    }
 
-//     bssl::UniquePtr<ASN1_OBJECT> asn1(OBJ_txt2obj(oid.c_str(), 1));
-//     if (asn1.get() == nullptr) {
-//         JNI_TRACE("X509Type_get_ext(%p, %s) => oid conversion failed", x509Type, oid.c_str());
-//         ERR_clear_error();
-//         return nullptr;
-//     }
+    ASN1_OBJECT *asn1 = OBJ_txt2obj(oid.c_str(), 1);
+    if (asn1 == nullptr) {
+        JNI_TRACE("X509Type_get_ext(%p, %s) => oid conversion failed", x509Type, oid.c_str());
+        ERR_clear_error();
+        return nullptr;
+    }
 
-//     int extIndex = get_ext_by_OBJ_func(x509Type, asn1.get(), -1);
-//     if (extIndex == -1) {
-//         JNI_TRACE("X509Type_get_ext(%p, %s) => ext not found", x509Type, oid.c_str());
-//         return nullptr;
-//     }
+    int extIndex = get_ext_by_OBJ_func(x509Type, asn1, -1);
+    if (extIndex == -1) {
+        ASN1_OBJECT_free(asn1);
+        JNI_TRACE("X509Type_get_ext(%p, %s) => ext not found", x509Type, oid.c_str());
+        return nullptr;
+    }
 
-//     X509_EXTENSION* ext = get_ext_func(x509Type, extIndex);
-//     JNI_TRACE("X509Type_get_ext(%p, %s) => %p", x509Type, oid.c_str(), ext);
-//     return ext;
-// }
+    X509_EXTENSION* ext = get_ext_func(x509Type, extIndex);
+    ASN1_OBJECT_free(asn1);
+    JNI_TRACE("X509Type_get_ext(%p, %s) => %p", x509Type, oid.c_str(), ext);
+    return ext;
+}
 
-// template <typename T, int (*get_ext_by_OBJ_func)(const T*, const ASN1_OBJECT*, int),
-//           X509_EXTENSION* (*get_ext_func)(const T*, int)>
-// static jbyteArray X509Type_get_ext_oid(JNIEnv* env, const T* x509Type, jstring oidString) {
-//     X509_EXTENSION* ext =
-//             X509Type_get_ext<T, get_ext_by_OBJ_func, get_ext_func>(env, x509Type, oidString);
-//     if (ext == nullptr) {
-//         JNI_TRACE("X509Type_get_ext_oid(%p, %p) => fetching extension failed", x509Type, oidString);
-//         return nullptr;
-//     }
+template <typename T, int (*get_ext_by_OBJ_func)(const T*, const ASN1_OBJECT*, int),
+          X509_EXTENSION* (*get_ext_func)(const T*, int)>
+static jbyteArray X509Type_get_ext_oid(JNIEnv* env, const T* x509Type, jstring oidString) {
+    X509_EXTENSION* ext =
+            X509Type_get_ext<T, get_ext_by_OBJ_func, get_ext_func>(env, x509Type, oidString);
+    if (ext == nullptr) {
+        JNI_TRACE("X509Type_get_ext_oid(%p, %p) => fetching extension failed", x509Type, oidString);
+        return nullptr;
+    }
 
-//     JNI_TRACE("X509Type_get_ext_oid(%p, %p) => %p", x509Type, oidString,
-//               X509_EXTENSION_get_data(ext));
-//     return ASN1ToByteArray<ASN1_OCTET_STRING>(env, X509_EXTENSION_get_data(ext),
-//                                               i2d_ASN1_OCTET_STRING);
-// }
+    JNI_TRACE("X509Type_get_ext_oid(%p, %p) => %p", x509Type, oidString,
+              X509_EXTENSION_get_data(ext));
+    return ASN1ToByteArray<ASN1_OCTET_STRING>(env, X509_EXTENSION_get_data(ext),
+                                              i2d_ASN1_OCTET_STRING);
+}
 
 // static jlong NativeCrypto_X509_CRL_get_ext(JNIEnv* env, jclass, jlong x509CrlRef,
 //                                            CONSCRYPT_UNUSED jobject holder, jstring oid) {
@@ -6118,19 +6122,19 @@ static jlong NativeCrypto_X509_get_pubkey(JNIEnv* env, jclass, jlong x509Ref,
     return reinterpret_cast<uintptr_t>(pkey);
 }
 
-// static jbyteArray NativeCrypto_X509_get_issuer_name(JNIEnv* env, jclass, jlong x509Ref,
-//                                                     CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("X509_get_issuer_name(%p)", x509);
+static jbyteArray NativeCrypto_X509_get_issuer_name(JNIEnv* env, jclass, jlong x509Ref,
+                                                    CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("X509_get_issuer_name(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("X509_get_issuer_name(%p) => x509 == null", x509);
-//         return nullptr;
-//     }
-//     return ASN1ToByteArray<X509_NAME>(env, X509_get_issuer_name(x509), i2d_X509_NAME);
-// }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("X509_get_issuer_name(%p) => x509 == null", x509);
+        return nullptr;
+    }
+    return ASN1ToByteArray<X509_NAME>(env, X509_get_issuer_name(x509), i2d_X509_NAME);
+}
 
 static jbyteArray NativeCrypto_X509_get_subject_name(JNIEnv* env, jclass, jlong x509Ref,
                                                      CONSCRYPT_UNUSED jobject holder) {
@@ -6371,14 +6375,14 @@ static jstring NativeCrypto_get_X509_pubkey_oid(JNIEnv* env, jclass, jlong x509R
 //     return pathlen;
 // }
 
-// static jbyteArray NativeCrypto_X509_get_ext_oid(JNIEnv* env, jclass, jlong x509Ref,
-//                                                 CONSCRYPT_UNUSED jobject holder,
-//                                                 jstring oidString) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("X509_get_ext_oid(%p, %p)", x509, oidString);
-//     return X509Type_get_ext_oid<X509, X509_get_ext_by_OBJ, X509_get_ext>(env, x509, oidString);
-// }
+static jbyteArray NativeCrypto_X509_get_ext_oid(JNIEnv* env, jclass, jlong x509Ref,
+                                                CONSCRYPT_UNUSED jobject holder,
+                                                jstring oidString) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("X509_get_ext_oid(%p, %p)", x509, oidString);
+    return X509Type_get_ext_oid<X509, X509_get_ext_by_OBJ, X509_get_ext>(env, x509, oidString);
+}
 
 // static jbyteArray NativeCrypto_X509_CRL_get_ext_oid(JNIEnv* env, jclass, jlong x509CrlRef,
 //                                                     CONSCRYPT_UNUSED jobject holder,
@@ -10862,7 +10866,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(X509_cmp, "(J" REF_X509 "J" REF_X509 ")I"),
         // CONSCRYPT_NATIVE_METHOD(X509_print_ex, "(JJ" REF_X509 "JJ)V"),
         CONSCRYPT_NATIVE_METHOD(X509_get_pubkey, "(J" REF_X509 ")J"),
-        // CONSCRYPT_NATIVE_METHOD(X509_get_issuer_name, "(J" REF_X509 ")[B"),
+        CONSCRYPT_NATIVE_METHOD(X509_get_issuer_name, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(X509_get_subject_name, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(get_X509_pubkey_oid, "(J" REF_X509 ")Ljava/lang/String;"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_sig_alg_oid, "(J" REF_X509 ")Ljava/lang/String;"),
@@ -10872,7 +10876,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         // CONSCRYPT_NATIVE_METHOD(get_X509_ex_kusage, "(J" REF_X509 ")[Z"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_ex_xkusage, "(J" REF_X509 ")[Ljava/lang/String;"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_ex_pathlen, "(J" REF_X509 ")I"),
-        // CONSCRYPT_NATIVE_METHOD(X509_get_ext_oid, "(J" REF_X509 "Ljava/lang/String;)[B"),
+        CONSCRYPT_NATIVE_METHOD(X509_get_ext_oid, "(J" REF_X509 "Ljava/lang/String;)[B"),
         // CONSCRYPT_NATIVE_METHOD(X509_CRL_get_ext_oid, "(J" REF_X509_CRL "Ljava/lang/String;)[B"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_CRL_crl_enc, "(J" REF_X509_CRL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(X509_CRL_verify, "(J" REF_X509_CRL REF_EVP_PKEY ")V"),
@@ -10889,8 +10893,8 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         //                         "(J" REF_X509 "I)[[Ljava/lang/Object;"),
         CONSCRYPT_NATIVE_METHOD(X509_get_notBefore, "(J" REF_X509 ")J"),
         CONSCRYPT_NATIVE_METHOD(X509_get_notAfter, "(J" REF_X509 ")J"),
-        // CONSCRYPT_NATIVE_METHOD(X509_get_version, "(J" REF_X509 ")J"),
-        // CONSCRYPT_NATIVE_METHOD(X509_get_serialNumber, "(J" REF_X509 ")[B"),
+        CONSCRYPT_NATIVE_METHOD(X509_get_version, "(J" REF_X509 ")J"),
+        CONSCRYPT_NATIVE_METHOD(X509_get_serialNumber, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(X509_verify, "(J" REF_X509 REF_EVP_PKEY ")V"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert_without_ext,
