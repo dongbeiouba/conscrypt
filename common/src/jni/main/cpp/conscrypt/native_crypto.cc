@@ -47,6 +47,7 @@
 #include <openssl/rsa.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <openssl/evperr.h>
 
 #include <limits>
 #include <type_traits>
@@ -6083,39 +6084,39 @@ static jint NativeCrypto_X509_cmp(JNIEnv* env, jclass, jlong x509Ref1,
 //     JNI_TRACE("X509_print_ex(%p, %p, %ld, %ld) => success", bio, x509, nmflag, certflag);
 // }
 
-// static jlong NativeCrypto_X509_get_pubkey(JNIEnv* env, jclass, jlong x509Ref,
-//                                           CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("X509_get_pubkey(%p)", x509);
+static jlong NativeCrypto_X509_get_pubkey(JNIEnv* env, jclass, jlong x509Ref,
+                                          CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("X509_get_pubkey(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("X509_get_pubkey(%p) => x509 == null", x509);
-//         return 0;
-//     }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("X509_get_pubkey(%p) => x509 == null", x509);
+        return 0;
+    }
 
-//     bssl::UniquePtr<EVP_PKEY> pkey(X509_get_pubkey(x509));
-//     if (pkey.get() == nullptr) {
-//         const uint32_t last_error = ERR_peek_last_error();
-//         const uint32_t first_error = ERR_peek_error();
-//         if ((ERR_GET_LIB(last_error) == ERR_LIB_EVP &&
-//              ERR_GET_REASON(last_error) == EVP_R_UNKNOWN_PUBLIC_KEY_TYPE) ||
-//             (ERR_GET_LIB(first_error) == ERR_LIB_EC &&
-//              ERR_GET_REASON(first_error) == EC_R_UNKNOWN_GROUP)) {
-//             ERR_clear_error();
-//             conscrypt::jniutil::throwNoSuchAlgorithmException(env, "X509_get_pubkey");
-//             return 0;
-//         }
+    EVP_PKEY *pkey = X509_get_pubkey(x509);
+    if (pkey == nullptr) {
+        const uint32_t err = ERR_peek_error();
 
-//         conscrypt::jniutil::throwExceptionFromBoringSSLError(
-//                 env, "X509_get_pubkey", conscrypt::jniutil::throwInvalidKeyException);
-//         return 0;
-//     }
+        if ((ERR_GET_LIB(err) == ERR_LIB_EVP &&
+             ERR_GET_REASON(err) == EVP_R_UNSUPPORTED_ALGORITHM) ||
+            (ERR_GET_LIB(err) == ERR_LIB_EC &&
+             ERR_GET_REASON(err) == EC_R_UNKNOWN_GROUP)) {
+            ERR_clear_error();
+            conscrypt::jniutil::throwNoSuchAlgorithmException(env, "X509_get_pubkey");
+            return 0;
+        }
 
-//     JNI_TRACE("X509_get_pubkey(%p) => %p", x509, pkey.get());
-//     return reinterpret_cast<uintptr_t>(pkey.release());
-// }
+        conscrypt::jniutil::throwExceptionFromBoringSSLError(
+                env, "X509_get_pubkey", conscrypt::jniutil::throwInvalidKeyException);
+        return 0;
+    }
+
+    JNI_TRACE("X509_get_pubkey(%p) => %p", x509, pkey);
+    return reinterpret_cast<uintptr_t>(pkey);
+}
 
 // static jbyteArray NativeCrypto_X509_get_issuer_name(JNIEnv* env, jclass, jlong x509Ref,
 //                                                     CONSCRYPT_UNUSED jobject holder) {
@@ -10860,7 +10861,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         // CONSCRYPT_NATIVE_METHOD(X509_free, "(J" REF_X509 ")V"),
         CONSCRYPT_NATIVE_METHOD(X509_cmp, "(J" REF_X509 "J" REF_X509 ")I"),
         // CONSCRYPT_NATIVE_METHOD(X509_print_ex, "(JJ" REF_X509 "JJ)V"),
-        // CONSCRYPT_NATIVE_METHOD(X509_get_pubkey, "(J" REF_X509 ")J"),
+        CONSCRYPT_NATIVE_METHOD(X509_get_pubkey, "(J" REF_X509 ")J"),
         // CONSCRYPT_NATIVE_METHOD(X509_get_issuer_name, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(X509_get_subject_name, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_pubkey_oid, "(J" REF_X509 ")Ljava/lang/String;"),
