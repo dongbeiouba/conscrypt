@@ -4563,14 +4563,25 @@ static jbyteArray NativeCrypto_X509_get_serialNumber(JNIEnv* env, jclass, jlong 
 //     JNI_TRACE("X509_verify(%p, %p) => verify success", x509, pkey);
 // }
 
-// static jbyteArray NativeCrypto_get_X509_tbs_cert(JNIEnv* env, jclass, jlong x509Ref,
-//                                                  CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("get_X509_tbs_cert(%p)", x509);
-//     // Note |i2d_X509_tbs| preserves the original encoding of the TBSCertificate.
-//     return ASN1ToByteArray<X509>(env, x509, i2d_X509_tbs);
-// }
+static jbyteArray NativeCrypto_get_X509_tbs_cert(JNIEnv* env, jclass, jlong x509Ref,
+                                                 CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("get_X509_tbs_cert(%p)", x509);
+
+    X509 *tmp = X509_dup(x509);
+    if (tmp == nullptr) {
+        conscrypt::jniutil::throwExceptionFromBoringSSLError(env, "X509_dup");
+        JNI_TRACE("X509_dup(%p) => null", x509);
+        return nullptr;
+    }
+
+    jbyteArray ret = ASN1ToByteArray<X509>(env, tmp, i2d_re_X509_tbs);
+
+    X509_free(tmp);
+
+    return ret;
+}
 
 // static jbyteArray NativeCrypto_get_X509_tbs_cert_without_ext(JNIEnv* env, jclass, jlong x509Ref,
 //                                                              CONSCRYPT_UNUSED jobject holder,
@@ -10845,7 +10856,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(X509_get_version, "(J" REF_X509 ")J"),
         CONSCRYPT_NATIVE_METHOD(X509_get_serialNumber, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(X509_verify, "(J" REF_X509 REF_EVP_PKEY ")V"),
-        // CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert, "(J" REF_X509 ")[B"),
+        CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert, "(J" REF_X509 ")[B"),
         // CONSCRYPT_NATIVE_METHOD(get_X509_tbs_cert_without_ext,
         //                         "(J" REF_X509 "Ljava/lang/String;)[B"),
         CONSCRYPT_NATIVE_METHOD(get_X509_signature, "(J" REF_X509 ")[B"),
