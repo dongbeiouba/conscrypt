@@ -5699,19 +5699,19 @@ static jbyteArray NativeCrypto_i2d_X509(JNIEnv* env, jclass, jlong x509Ref,
     return ASN1ToByteArray<X509>(env, x509, i2d_X509);
 }
 
-// static jbyteArray NativeCrypto_i2d_X509_PUBKEY(JNIEnv* env, jclass, jlong x509Ref,
-//                                                CONSCRYPT_UNUSED jobject holder) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
-//     JNI_TRACE("i2d_X509_PUBKEY(%p)", x509);
+static jbyteArray NativeCrypto_i2d_X509_PUBKEY(JNIEnv* env, jclass, jlong x509Ref,
+                                               CONSCRYPT_UNUSED jobject holder) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    X509* x509 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref));
+    JNI_TRACE("i2d_X509_PUBKEY(%p)", x509);
 
-//     if (x509 == nullptr) {
-//         conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
-//         JNI_TRACE("i2d_X509_PUBKEY(%p) => x509 == null", x509);
-//         return nullptr;
-//     }
-//     return ASN1ToByteArray<X509_PUBKEY>(env, X509_get_X509_PUBKEY(x509), i2d_X509_PUBKEY);
-// }
+    if (x509 == nullptr) {
+        conscrypt::jniutil::throwNullPointerException(env, "x509 == null");
+        JNI_TRACE("i2d_X509_PUBKEY(%p) => x509 == null", x509);
+        return nullptr;
+    }
+    return ASN1ToByteArray<X509_PUBKEY>(env, X509_get_X509_PUBKEY(x509), i2d_X509_PUBKEY);
+}
 
 template <typename T, T* (*PEM_read_func)(BIO*, T**, pem_password_cb*, void*)>
 static jlong PEM_to_jlong(JNIEnv* env, jlong bioRef) {
@@ -10851,7 +10851,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(d2i_X509_bio, "(J)J"),
         // CONSCRYPT_NATIVE_METHOD(d2i_X509, "([B)J"),
         CONSCRYPT_NATIVE_METHOD(i2d_X509, "(J" REF_X509 ")[B"),
-        // CONSCRYPT_NATIVE_METHOD(i2d_X509_PUBKEY, "(J" REF_X509 ")[B"),
+        CONSCRYPT_NATIVE_METHOD(i2d_X509_PUBKEY, "(J" REF_X509 ")[B"),
         CONSCRYPT_NATIVE_METHOD(PEM_read_bio_X509, "(J)J"),
         // CONSCRYPT_NATIVE_METHOD(PEM_read_bio_PKCS7, "(JI)[J"),
         // CONSCRYPT_NATIVE_METHOD(d2i_PKCS7_bio, "(JI)[J"),
