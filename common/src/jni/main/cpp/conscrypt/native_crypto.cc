@@ -438,6 +438,33 @@ static jbyteArray Buf2ByteArray(JNIEnv* env, unsigned char *buf, size_t len)
 //     return ret;
 // }
 
+static jobjectArray X509_NAMEs_to_ObjectArray(JNIEnv* env,
+                                              const STACK_OF(X509_NAME) *names) {
+    if (names == nullptr) {
+        return nullptr;
+    }
+
+    size_t num = sk_X509_NAME_num(names);
+    ScopedLocalRef<jobjectArray> array(
+        env, env->NewObjectArray(static_cast<int>(num),
+                                 conscrypt::jniutil::byteArrayClass, nullptr));
+    if (array.get() == nullptr) {
+        JNI_TRACE("failed to allocate array");
+        return nullptr;
+    }
+
+    for (size_t i = 0; i < num; i++) {
+        X509_NAME* name = sk_X509_NAME_value(names, i);
+        ScopedLocalRef<jbyteArray> bArray(env, ASN1ToByteArray<X509_NAME>(env, name, i2d_X509_NAME));
+        if (bArray.get() == nullptr) {
+            return nullptr;
+        }
+        env->SetObjectArrayElement(array.get(), i, bArray.get());
+    }
+
+    return array.release();
+}
+
 static jobjectArray X509s_to_ObjectArray(JNIEnv* env,
                                          const STACK_OF(X509) *certs) {
     if (certs == nullptr) {
@@ -6803,50 +6830,52 @@ static int cert_cb(SSL* ssl, CONSCRYPT_UNUSED void* arg) {
     jmethodID methodID = conscrypt::jniutil::sslHandshakeCallbacks_clientCertificateRequested;
 
     // Call Java callback which can reconfigure the client certificate.
-    // const uint8_t* ctype = nullptr;
-    // size_t ctype_num = SSL_get0_certificate_types(ssl, &ctype);
-    // const uint16_t* sigalgs = nullptr;
-    // size_t sigalgs_num = SSL_get0_peer_verify_algorithms(ssl, &sigalgs);
-    // ScopedLocalRef<jobjectArray> issuers(
-    //         env, CryptoBuffersToObjectArray(env, SSL_get0_server_requested_CAs(ssl)));
-    // if (issuers.get() == nullptr) {
-    //     return 0;
-    // }
+    const uint8_t* ctype = nullptr;
+    size_t ctype_num = SSL_get0_certificate_types(ssl, &ctype);
+    int sigalgs_num = SSL_get_sigalgs(ssl, -1, NULL, NULL, NULL, NULL, NULL);
+    ScopedLocalRef<jobjectArray> issuers(
+            env, X509_NAMEs_to_ObjectArray(env, SSL_get0_peer_CA_list(ssl)));
 
-    // if (conscrypt::trace::kWithJniTrace) {
-    //     for (size_t i = 0; i < ctype_num; i++) {
-    //         JNI_TRACE("ssl=%p clientCertificateRequested keyTypes[%zu]=%d", ssl, i, ctype[i]);
-    //     }
-    //     for (size_t i = 0; i < sigalgs_num; i++) {
-    //         JNI_TRACE("ssl=%p clientCertificateRequested sigAlgs[%zu]=%d", ssl, i, sigalgs[i]);
-    //     }
-    // }
+    if (issuers.get() == nullptr) {
+        JNI_TRACE("ssl=%p cert_cb issuers == null, empty CAs", ssl);
+        return 0;
+    }
 
-    // jbyteArray keyTypes = env->NewByteArray(static_cast<jsize>(ctype_num));
-    // if (keyTypes == nullptr) {
-    //     JNI_TRACE("ssl=%p cert_cb keyTypes == null => 0", ssl);
-    //     return 0;
-    // }
-    // env->SetByteArrayRegion(keyTypes, 0, static_cast<jsize>(ctype_num),
-    //                         reinterpret_cast<const jbyte*>(ctype));
+    if (conscrypt::trace::kWithJniTrace) {
+        for (size_t i = 0; i < ctype_num; i++) {
+            JNI_TRACE("ssl=%p clientCertificateRequested keyTypes[%zu]=%d", ssl, i, ctype[i]);
+        }
+    }
 
-    // jintArray signatureAlgs = env->NewIntArray(static_cast<jsize>(sigalgs_num));
-    // if (signatureAlgs == nullptr) {
-    //     JNI_TRACE("ssl=%p cert_cb signatureAlgs == null => 0", ssl);
-    //     return 0;
-    // }
-    // {
-    //     ScopedIntArrayRW sigAlgsRW(env, signatureAlgs);
-    //     for (size_t i = 0; i < sigalgs_num; i++) {
-    //         sigAlgsRW[i] = sigalgs[i];
-    //     }
-    // }
+    jbyteArray keyTypes = env->NewByteArray(static_cast<jsize>(ctype_num));
+    if (keyTypes == nullptr) {
+        JNI_TRACE("ssl=%p cert_cb keyTypes == null => 0", ssl);
+        return 0;
+    }
+    env->SetByteArrayRegion(keyTypes, 0, static_cast<jsize>(ctype_num),
+                            reinterpret_cast<const jbyte*>(ctype));
 
-    // JNI_TRACE(
-    //         "ssl=%p clientCertificateRequested calling clientCertificateRequested "
-    //         "keyTypes=%p signatureAlgs=%p issuers=%p",
-    //         ssl, keyTypes, signatureAlgs, issuers.get());
-    // env->CallVoidMethod(sslHandshakeCallbacks, methodID, keyTypes, signatureAlgs, issuers.get());
+    jintArray signatureAlgs = env->NewIntArray(static_cast<jsize>(sigalgs_num));
+    if (signatureAlgs == nullptr) {
+        JNI_TRACE("ssl=%p cert_cb signatureAlgs == null => 0", ssl);
+        return 0;
+    }
+    {
+        ScopedIntArrayRW sigAlgsRW(env, signatureAlgs);
+        for (int i = 0; i < sigalgs_num; i++) {
+            unsigned char rsig, rhash;
+            (void)SSL_get_sigalgs(ssl, i, NULL, NULL, NULL, &rsig, &rhash);
+            sigAlgsRW[i] = (unsigned int)rhash << 8 | rsig;
+
+            JNI_TRACE("ssl=%p clientCertificateRequested sigAlgs[%zu]=%d", ssl, i, sigAlgsRW[i]);
+        }
+    }
+
+    JNI_TRACE(
+            "ssl=%p clientCertificateRequested calling clientCertificateRequested "
+            "keyTypes=%p signatureAlgs=%p issuers=%p",
+            ssl, keyTypes, signatureAlgs, issuers.get());
+    env->CallVoidMethod(sslHandshakeCallbacks, methodID, keyTypes, signatureAlgs, issuers.get());
 
     if (env->ExceptionCheck()) {
         JNI_TRACE("ssl=%p cert_cb exception => 0", ssl);
@@ -7180,7 +7209,7 @@ static jlong NativeCrypto_SSL_CTX_new(JNIEnv* env, jclass) {
     SSL_CTX_set_mode(sslCtx, mode);
 
     SSL_CTX_set_info_callback(sslCtx, info_callback);
-    // SSL_CTX_set_cert_cb(sslCtx, cert_cb, nullptr);
+    SSL_CTX_set_cert_cb(sslCtx, cert_cb, nullptr);
     // SSL_CTX_set_select_certificate_cb(sslCtx, select_certificate_cb);
     if (conscrypt::trace::kWithJniTraceKeys) {
         SSL_CTX_set_keylog_callback(sslCtx, debug_print_session_key);
