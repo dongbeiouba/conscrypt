@@ -97,6 +97,9 @@ const char *ssl_CIPHER_get_kx_name(const SSL_CIPHER *cipher) {
         case NID_kx_psk:
             return "PSK";
 
+        case NID_kx_any:
+            return "GENERIC";
+
         default:
             return "UNKNOWN";
     }
