@@ -6836,11 +6836,6 @@ static int cert_cb(SSL* ssl, CONSCRYPT_UNUSED void* arg) {
     ScopedLocalRef<jobjectArray> issuers(
             env, X509_NAMEs_to_ObjectArray(env, SSL_get0_peer_CA_list(ssl)));
 
-    if (issuers.get() == nullptr) {
-        JNI_TRACE("ssl=%p cert_cb issuers == null, empty CAs", ssl);
-        return 0;
-    }
-
     if (conscrypt::trace::kWithJniTrace) {
         for (size_t i = 0; i < ctype_num; i++) {
             JNI_TRACE("ssl=%p clientCertificateRequested keyTypes[%zu]=%d", ssl, i, ctype[i]);
