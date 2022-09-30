@@ -73,20 +73,33 @@ static const std::set<std::string> tls13_ciphersuites = {
     "TLS_SM4_CCM_SM3"
 };
 
-static const char* ssl_CIPHER_get_kx_name(const SSL_CIPHER* cipher) {
+const char *ssl_CIPHER_get_kx_name(const SSL_CIPHER *cipher) {
     if (cipher == nullptr) {
-        return nullptr;
+        return "";
     }
 
-    int nid = SSL_CIPHER_get_kx_nid(cipher);
-    const char* kx_name;
+    switch (SSL_CIPHER_get_kx_nid(cipher)) {
+        case NID_kx_rsa:
+            return "RSA";
 
-    if (nid == NID_undef)
-        kx_name = "UNKNOWN";
-    else
-        kx_name = OBJ_nid2ln(nid);
+        case NID_kx_ecdhe:
+            switch (SSL_CIPHER_get_auth_nid(cipher)) {
+                case NID_auth_ecdsa:
+                    return "ECDHE_ECDSA";
+                case NID_auth_rsa:
+                    return "ECDHE_RSA";
+                case NID_auth_psk:
+                    return "ECDHE_PSK";
+                default:
+                    return "UNKNOWN";
+            }
 
-    return kx_name;
+        case NID_kx_psk:
+            return "PSK";
+
+        default:
+            return "UNKNOWN";
+    }
 }
 
 /**
