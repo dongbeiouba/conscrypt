@@ -9468,11 +9468,73 @@ static jlong NativeCrypto_SSL_get_timeout(JNIEnv* env, jclass, jlong ssl_address
     return result;
 }
 
-// static jint NativeCrypto_SSL_get_signature_algorithm_key_type(JNIEnv* env, jclass,
-//                                                               jint signatureAlg) {
-//     CHECK_ERROR_QUEUE_ON_RETURN;
-//     return SSL_get_signature_algorithm_key_type(signatureAlg);
-// }
+// SSL_SIGN_* are signature algorithm values as defined in TLS 1.3.
+#define SSL_SIGN_RSA_PKCS1_SHA1 0x0201
+#define SSL_SIGN_RSA_PKCS1_SHA256 0x0401
+#define SSL_SIGN_RSA_PKCS1_SHA384 0x0501
+#define SSL_SIGN_RSA_PKCS1_SHA512 0x0601
+#define SSL_SIGN_ECDSA_SHA1 0x0203
+#define SSL_SIGN_ECDSA_SECP256R1_SHA256 0x0403
+#define SSL_SIGN_ECDSA_SECP384R1_SHA384 0x0503
+#define SSL_SIGN_ECDSA_SECP521R1_SHA512 0x0603
+#define SSL_SIGN_RSA_PSS_RSAE_SHA256 0x0804
+#define SSL_SIGN_RSA_PSS_RSAE_SHA384 0x0805
+#define SSL_SIGN_RSA_PSS_RSAE_SHA512 0x0806
+#define SSL_SIGN_ED25519 0x0807
+#define SSL_SIGN_SM2_SM3 0x0708
+
+// SSL_SIGN_RSA_PKCS1_MD5_SHA1 is an internal signature algorithm used to
+// specify raw RSASSA-PKCS1-v1_5 with an MD5/SHA-1 concatenation, as used in TLS
+// before TLS 1.2.
+#define SSL_SIGN_RSA_PKCS1_MD5_SHA1 0xff01
+
+typedef struct {
+  uint16_t sigalg;
+  int pkey_type;
+  int curve;
+  const EVP_MD *(*digest_func)(void);
+  bool is_rsa_pss;
+} SSL_SIGNATURE_ALGORITHM;
+
+static const SSL_SIGNATURE_ALGORITHM kSignatureAlgorithms[] = {
+    {SSL_SIGN_SM2_SM3, EVP_PKEY_SM2, NID_sm2, &EVP_sm3, false },
+    {SSL_SIGN_RSA_PKCS1_MD5_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_md5_sha1,
+     false},
+    {SSL_SIGN_RSA_PKCS1_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_sha1, false},
+    {SSL_SIGN_RSA_PKCS1_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, false},
+    {SSL_SIGN_RSA_PKCS1_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, false},
+    {SSL_SIGN_RSA_PKCS1_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, false},
+
+    {SSL_SIGN_RSA_PSS_RSAE_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, true},
+    {SSL_SIGN_RSA_PSS_RSAE_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, true},
+    {SSL_SIGN_RSA_PSS_RSAE_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, true},
+
+    {SSL_SIGN_ECDSA_SHA1, EVP_PKEY_EC, NID_undef, &EVP_sha1, false},
+    {SSL_SIGN_ECDSA_SECP256R1_SHA256, EVP_PKEY_EC, NID_X9_62_prime256v1,
+     &EVP_sha256, false},
+    {SSL_SIGN_ECDSA_SECP384R1_SHA384, EVP_PKEY_EC, NID_secp384r1, &EVP_sha384,
+     false},
+    {SSL_SIGN_ECDSA_SECP521R1_SHA512, EVP_PKEY_EC, NID_secp521r1, &EVP_sha512,
+     false},
+
+    {SSL_SIGN_ED25519, EVP_PKEY_ED25519, NID_undef, nullptr, false},
+};
+
+static const SSL_SIGNATURE_ALGORITHM *get_signature_algorithm(uint16_t sigalg) {
+    for (size_t i = 0; i < sizeof(kSignatureAlgorithms)/sizeof(kSignatureAlgorithms[0]); i++) {
+        if (kSignatureAlgorithms[i].sigalg == sigalg) {
+            return &kSignatureAlgorithms[i];
+        }
+    }
+    return nullptr;
+}
+
+static jint NativeCrypto_SSL_get_signature_algorithm_key_type(JNIEnv* env, jclass,
+                                                              jint signatureAlg) {
+    CHECK_ERROR_QUEUE_ON_RETURN;
+    const SSL_SIGNATURE_ALGORITHM *alg = get_signature_algorithm(signatureAlg);
+    return alg != nullptr ? alg->pkey_type : EVP_PKEY_NONE;
+}
 
 /**
  * Gets the timeout for the SSL session.
@@ -10978,7 +11040,7 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(SSL_get_time, "(J" REF_SSL ")J"),
         CONSCRYPT_NATIVE_METHOD(SSL_set_timeout, "(J" REF_SSL "J)J"),
         CONSCRYPT_NATIVE_METHOD(SSL_get_timeout, "(J" REF_SSL ")J"),
-        // CONSCRYPT_NATIVE_METHOD(SSL_get_signature_algorithm_key_type, "(I)I"),
+        CONSCRYPT_NATIVE_METHOD(SSL_get_signature_algorithm_key_type, "(I)I"),
         CONSCRYPT_NATIVE_METHOD(SSL_SESSION_get_timeout, "(J)J"),
         CONSCRYPT_NATIVE_METHOD(SSL_session_id, "(J" REF_SSL ")[B"),
         // CONSCRYPT_NATIVE_METHOD(SSL_SESSION_get_version, "(J)Ljava/lang/String;"),
