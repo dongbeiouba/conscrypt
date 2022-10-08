@@ -7458,6 +7458,7 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
                                                     jobjectArray encodedCertificatesJava,
                                                     jobject pkeyRef) {
     X509 *x509 = nullptr;
+    X509 *cert = nullptr;
     STACK_OF(X509) *chain = nullptr;
     BIO *bio = nullptr;
     CHECK_ERROR_QUEUE_ON_RETURN;
@@ -7502,15 +7503,19 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
     // Copy the certificates.
     for (size_t i = 0; i < numCerts; ++i) {
         ScopedLocalRef<jbyteArray> certArray(env, reinterpret_cast<jbyteArray>(
-                             env->GetObjectArrayElement(encodedCertificatesJava, i)));
+            env->GetObjectArrayElement(encodedCertificatesJava, i)));
         
         bio = BIO_new_mem_buf(certArray.get(), env->GetArrayLength(certArray.get()));
         if (bio == nullptr)
             goto err;
-        x509 = PEM_read_bio_X509_AUX(bio, nullptr, nullptr, nullptr);
+
+        x509 = d2i_X509_bio(bio, NULL);
         if (x509 == nullptr)
             goto err;
-        if (i > 0) {
+
+        if (i == 0) {
+            cert = x509;
+        } else {
             if (sk_X509_push(chain, x509) <= 0)
                 goto err;
         }
@@ -7519,7 +7524,7 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
         bio = nullptr;
     }
 
-    if (SSL_use_cert_and_key(ssl, x509, pkey, chain, 1) != 1) {
+    if (SSL_use_cert_and_key(ssl, cert, pkey, chain, 1) != 1) {
         conscrypt::jniutil::throwSSLExceptionWithSslErrors(env, ssl, SSL_ERROR_NONE,
                                                            "Error configuring certificate");
         JNI_TRACE("ssl=%p NativeCrypto_setLocalCertsAndPrivateKey => error", ssl);
@@ -7529,12 +7534,12 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
 
 err:
 
-    if (x509)
-        X509_free(x509);
+    if (cert)
+        X509_free(cert);
     if (bio)
         BIO_free(bio);
     if (chain)
-        sk_X509_free(chain);
+        sk_X509_pop_free(chain, X509_free);
 
     return;
 }
