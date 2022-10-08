@@ -7460,7 +7460,6 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
     X509 *x509 = nullptr;
     X509 *cert = nullptr;
     STACK_OF(X509) *chain = nullptr;
-    BIO *bio = nullptr;
     CHECK_ERROR_QUEUE_ON_RETURN;
     SSL* ssl = to_SSL(env, ssl_address, true);
     JNI_TRACE("ssl=%p NativeCrypto_setLocalCertsAndPrivateKey certificates=%p, privateKey=%p", ssl,
@@ -7502,16 +7501,21 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
 
     // Copy the certificates.
     for (size_t i = 0; i < numCerts; ++i) {
-        ScopedLocalRef<jbyteArray> certArray(env, reinterpret_cast<jbyteArray>(
+        ScopedByteArrayRO bytes(env, reinterpret_cast<jbyteArray>(
             env->GetObjectArrayElement(encodedCertificatesJava, i)));
-        
-        bio = BIO_new_mem_buf(certArray.get(), env->GetArrayLength(certArray.get()));
-        if (bio == nullptr)
+        if (bytes.get() == nullptr) {
+            JNI_TRACE("NativeCrypto_setLocalCertsAndPrivateKey(%p) => using byte array failed", ssl);
             goto err;
+        }
 
-        x509 = d2i_X509_bio(bio, NULL);
-        if (x509 == nullptr)
+        const unsigned char* tmp = reinterpret_cast<const unsigned char*>(bytes.get());
+        // NOLINTNEXTLINE(runtime/int)
+        x509 = d2i_X509(nullptr, &tmp, static_cast<long>(bytes.size()));
+        if (x509 == nullptr) {
+            conscrypt::jniutil::throwExceptionFromBoringSSLError(
+                    env, "Error reading X.509 data", conscrypt::jniutil::throwParsingException);
             goto err;
+        }
 
         if (i == 0) {
             cert = x509;
@@ -7519,9 +7523,6 @@ static void NativeCrypto_setLocalCertsAndPrivateKey(JNIEnv* env, jclass, jlong s
             if (sk_X509_push(chain, x509) <= 0)
                 goto err;
         }
-
-        BIO_free(bio);
-        bio = nullptr;
     }
 
     if (SSL_use_cert_and_key(ssl, cert, pkey, chain, 1) != 1) {
@@ -7536,8 +7537,7 @@ err:
 
     if (cert)
         X509_free(cert);
-    if (bio)
-        BIO_free(bio);
+
     if (chain)
         sk_X509_pop_free(chain, X509_free);
 
