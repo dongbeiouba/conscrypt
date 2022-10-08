@@ -6765,8 +6765,6 @@ static AppData* toAppData(const SSL* ssl) {
     return reinterpret_cast<AppData*>(SSL_get_app_data(ssl));
 }
 
-typedef int (*SSL_verify_cb)(int preverify_ok, X509_STORE_CTX *x509_ctx);
-
 static int cert_verify_callback(X509_STORE_CTX *ctx, void *arg) {
     SSL* ssl = (SSL *)X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());;
 
@@ -7263,7 +7261,8 @@ static jlong NativeCrypto_SSL_CTX_new(JNIEnv* env, jclass) {
     // SSL_CTX_sess_set_new_cb(sslCtx, new_session_callback);
     // SSL_CTX_sess_set_get_cb(sslCtx, server_session_requested_callback);
 
-    SSL_CTX_set_cert_verify_callback(sslCtx, cert_verify_callback, nullptr);
+    // TODO(tongsuo)
+    // SSL_CTX_set_cert_verify_callback(sslCtx, cert_verify_callback, nullptr);
 
     JNI_TRACE("NativeCrypto_SSL_CTX_new => %p", sslCtx);
     return (jlong)sslCtx;
