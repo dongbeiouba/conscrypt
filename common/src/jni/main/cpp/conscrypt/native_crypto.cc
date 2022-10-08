@@ -7261,8 +7261,7 @@ static jlong NativeCrypto_SSL_CTX_new(JNIEnv* env, jclass) {
     // SSL_CTX_sess_set_new_cb(sslCtx, new_session_callback);
     // SSL_CTX_sess_set_get_cb(sslCtx, server_session_requested_callback);
 
-    // TODO(tongsuo)
-    // SSL_CTX_set_cert_verify_callback(sslCtx, cert_verify_callback, nullptr);
+    SSL_CTX_set_cert_verify_callback(sslCtx, cert_verify_callback, nullptr);
 
     JNI_TRACE("NativeCrypto_SSL_CTX_new => %p", sslCtx);
     return (jlong)sslCtx;
